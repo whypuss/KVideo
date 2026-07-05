@@ -20,9 +20,13 @@ export default function HistoryPage() {
             <div className="max-w-4xl mx-auto px-4 py-8">
                 <div className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-[var(--radius-2xl)] overflow-hidden">
                     <HistoryHeader
-                        count={viewingHistory.length}
-                        onClearAll={() => setDeleteConfirm({ isOpen: true })}
+                        onClose={() => {}}
                     />
+                    <div className="p-4 border-b border-[var(--glass-border)] flex items-center justify-between">
+                        <span className="text-sm text-[var(--text-muted)]">{viewingHistory.length} 條記錄</span>
+                        <button onClick={() => setDeleteConfirm({ isOpen: true })}
+                            className="text-sm text-red-400 hover:text-red-300 transition cursor-pointer" data-no-spatial>清空全部</button>
+                    </div>
                     <HistoryList
                         history={viewingHistory}
                         onRemove={(id) => removeFromHistory(id)}
