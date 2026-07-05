@@ -1,4 +1,4 @@
-'use client';
+use client';
 
 import { createContext, useContext, type ReactNode } from 'react';
 
@@ -16,11 +16,11 @@ const defaultRuntimeFeatures: RuntimeFeatures = {
 const RuntimeFeaturesContext = createContext<RuntimeFeatures>(defaultRuntimeFeatures);
 
 interface RuntimeFeaturesProviderProps {
-  initialFeatures: RuntimeFeatures;
+  initialFeatures?: RuntimeFeatures;
   children: ReactNode;
 }
 
-export function RuntimeFeaturesProvider({ initialFeatures, children }: RuntimeFeaturesProviderProps) {
+export function RuntimeFeaturesProvider({ initialFeatures = defaultRuntimeFeatures, children }: RuntimeFeaturesProviderProps) {
   return (
     <RuntimeFeaturesContext.Provider value={initialFeatures}>
       {children}
