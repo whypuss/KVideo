@@ -132,6 +132,7 @@ export default async function RootLayout({
                 )}>
                   <AdKeywordsWrapper />
                   {children}
+      <SearchModal />
                   <BackToTop />
                   <ScrollPositionManager />
                 </PasswordGate>
