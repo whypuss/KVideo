@@ -14,6 +14,8 @@ interface UseSearchBoxHandlersProps {
     highlightedIndex: number;
     searchHistory: Array<{ query: string }>;
     addSearch: (query: string) => void;
+    removeSearch: (query: string) => void;
+    clearAll: () => void;
     hideDropdown: () => void;
     showDropdown: () => void;
     resetHighlight: () => void;
@@ -31,6 +33,8 @@ export function useSearchBoxHandlers({
     highlightedIndex,
     searchHistory,
     addSearch,
+    removeSearch,
+    clearAll,
     hideDropdown,
     showDropdown,
     resetHighlight,
