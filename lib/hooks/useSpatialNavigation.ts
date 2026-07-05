@@ -20,6 +20,27 @@ function getCenter(rect: DOMRect): { x: number; y: number } {
 
 type Direction = 'up' | 'down' | 'left' | 'right';
 
+/**
+ * Check if an element is navigable (not a small icon, not hidden, not in a no-spatial zone)
+ */
+function isNavigable(el: Element): boolean {
+  const rect = getRect(el);
+  const MIN_NAVIGABLE_SIZE = 30;
+  const MIN_NAVIGABLE_AREA = 900;
+
+  if (rect.width < MIN_NAVIGABLE_SIZE || rect.height < MIN_NAVIGABLE_SIZE) {
+    return false;
+  }
+  if (rect.width * rect.height < MIN_NAVIGABLE_AREA) {
+    return false;
+  }
+  if (el.hasAttribute('data-no-spatial')) return false;
+  if (el.closest('[data-no-spatial]')) return false;
+  if (el.hasAttribute('hidden') || getComputedStyle(el).visibility === 'hidden') return false;
+  if (el.hasAttribute('disabled')) return false;
+  return true;
+}
+
 function findBestCandidate(
   current: Element,
   candidates: Element[],
@@ -40,26 +61,16 @@ function findBestCandidate(
     const dx = candidateCenter.x - currentCenter.x;
     const dy = candidateCenter.y - currentCenter.y;
 
-    // Filter by direction
     let isInDirection = false;
     switch (direction) {
-      case 'up':
-        isInDirection = dy < -10;
-        break;
-      case 'down':
-        isInDirection = dy > 10;
-        break;
-      case 'left':
-        isInDirection = dx < -10;
-        break;
-      case 'right':
-        isInDirection = dx > 10;
-        break;
+      case 'up': isInDirection = dy < -10; break;
+      case 'down': isInDirection = dy > 10; break;
+      case 'left': isInDirection = dx < -10; break;
+      case 'right': isInDirection = dx > 10; break;
     }
 
     if (!isInDirection) continue;
 
-    // Weighted distance: favor elements along the primary axis
     let score: number;
     if (direction === 'up' || direction === 'down') {
       score = Math.abs(dy) + Math.abs(dx) * 3;
@@ -81,46 +92,26 @@ export function useSpatialNavigation(enabled: boolean) {
     if (!enabled) return;
 
     const directionMap: Record<string, Direction> = {
-      ArrowUp: 'up',
-      ArrowDown: 'down',
-      ArrowLeft: 'left',
-      ArrowRight: 'right',
+      ArrowUp: 'up', ArrowDown: 'down',
+      ArrowLeft: 'left', ArrowRight: 'right',
     };
 
     const direction = directionMap[e.key];
-
-    // For input/textarea: allow Left/Right for cursor movement,
-    // but let Up/Down navigate spatially so the user can escape the input on TV.
-    // Skip if the event was already handled (e.g., by search history dropdown).
     const target = e.target as HTMLElement;
-    const isInput = target.tagName === 'INPUT' ||
-      target.tagName === 'TEXTAREA' ||
-      target.isContentEditable;
+    const isInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable;
 
     if (isInput) {
-      if (!direction || direction === 'left' || direction === 'right') {
-        return;
-      }
-      // If a React handler already called preventDefault (e.g., dropdown navigation), skip
-      if (e.defaultPrevented) {
-        return;
-      }
+      if (!direction || direction === 'left' || direction === 'right') return;
+      if (e.defaultPrevented) return;
     }
 
     if (direction) {
-      // Check if the focused element is inside a [data-no-spatial] container
       const focused = document.activeElement as HTMLElement | null;
       if (focused?.closest('[data-no-spatial]')) return;
 
       const focusableElements = Array.from(
         document.querySelectorAll('[data-focusable]:not([disabled]):not([aria-hidden="true"])')
-      ).filter(el => {
-        // Filter out elements inside [data-no-spatial]
-        if (el.closest('[data-no-spatial]')) return false;
-        // Filter out hidden elements
-        const rect = getRect(el);
-        return rect.width > 0 && rect.height > 0;
-      });
+      ).filter(isNavigable);
 
       if (focusableElements.length === 0) return;
 
@@ -128,7 +119,6 @@ export function useSpatialNavigation(enabled: boolean) {
       const isAlreadyFocused = currentFocused && focusableElements.includes(currentFocused);
 
       if (!isAlreadyFocused) {
-        // Focus the first element
         (focusableElements[0] as HTMLElement).focus();
         e.preventDefault();
         return;
@@ -137,14 +127,6 @@ export function useSpatialNavigation(enabled: boolean) {
       const best = findBestCandidate(currentFocused!, focusableElements, direction);
       if (best) {
         (best as HTMLElement).focus();
-        best.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        e.preventDefault();
-      }
-    } else if (e.key === 'Enter') {
-      // Trigger click on focused element
-      const focused = document.activeElement as HTMLElement;
-      if (focused && focused.hasAttribute('data-focusable')) {
-        focused.click();
         e.preventDefault();
       }
     }
@@ -152,8 +134,7 @@ export function useSpatialNavigation(enabled: boolean) {
 
   useEffect(() => {
     if (!enabled) return;
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, [enabled, handleKeyDown]);
 }
