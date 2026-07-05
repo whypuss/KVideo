@@ -193,7 +193,7 @@ class MainActivity : ComponentActivity() {
     override fun onBackPressed() {
         if (customView != null) {
             exitCustomFullscreen()
-            return true
+            return
         }
 
         if (isSetupVisible()) {
