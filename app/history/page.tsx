@@ -11,7 +11,7 @@ import { useHistoryStore } from '@/lib/store/history-store';
 export default function HistoryPage() {
     const pathname = usePathname();
     const isPremium = pathname?.startsWith('/premium') ?? false;
-    const { viewingHistory, removeFromHistory, clearHistory } = useHistory(isPremium);
+    const { viewingHistory, removeFromHistory, clearHistory } = useHistoryStore();
     const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false });
 
     return (
