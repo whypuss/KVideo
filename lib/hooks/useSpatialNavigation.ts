@@ -25,8 +25,8 @@ type Direction = 'up' | 'down' | 'left' | 'right';
  */
 function isNavigable(el: Element): boolean {
   const rect = getRect(el);
-  const MIN_SIZE = 120;     // Minimum 120px wide OR tall
-  const MIN_AREA = 12000;   // Minimum area (e.g., 120x100)
+  const MIN_SIZE = 300;     // Minimum 120px wide OR tall
+  const MIN_AREA = 60000;   // Minimum area (e.g., 120x100)
 
   if (rect.width < MIN_SIZE && rect.height < MIN_SIZE) return false;
   if (rect.width * rect.height < MIN_AREA) return false;
@@ -36,7 +36,7 @@ function isNavigable(el: Element): boolean {
   if (el.hasAttribute('disabled')) return false;
 
   // Skip elements with data-no-spatial
-  if (el.hasAttribute('data-no-spatial')) return false;
+  if (el.hasAttribute('data-no-spatial') || el.hasAttribute('data-tv-hide')) return false;
 
   // Skip elements inside no-spatial containers
   if (el.closest('[data-no-spatial]')) return false;
