@@ -51,7 +51,7 @@ export function Navbar({ onReset, isPremiumMode = false }: NavbarProps) {
                             data-focusable
                             data-no-spatial
                         >
-                            <div className="w-8 h-8" sm:w-10 sm:h-10 relative flex items-center justify-center flex-shrink-0">
+                            <div className="w-8 h-8 sm:w-10 sm:h-10 relative flex items-center justify-center flex-shrink-0">
                                 <Image
                                     src={siteIconSrc}
                                     alt={siteConfig.name}
