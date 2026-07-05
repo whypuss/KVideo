@@ -39,3 +39,26 @@ body.tv-mode [data-tv-hide] {
 body.tv-mode [data-tv-hide] {
     display: none !important;
 }
+
+/* ===== Netflix Row Styles ===== */
+
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
+
+.scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+body.tv-mode .netflix-row .group/card:focus {
+    transform: scale(1.08);
+    z-index: 50;
+    outline: 3px solid var(--accent-color);
+    outline-offset: 2px;
+}
+
+body.tv-mode .netflix-row .group/card:focus-visible {
+    outline: 3px solid var(--accent-color);
+    outline-offset: 2px;
+}
