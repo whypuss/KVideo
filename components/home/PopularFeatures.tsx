@@ -1,15 +1,12 @@
 /**
- * PopularFeatures - Main component for popular movies section
- * Displays Douban movie recommendations with tag filtering and infinite scroll.
- * Includes personalized "为你推荐" tag when user has 2+ watched items.
+ * PopularFeatures - Netflix-style homepage
  */
 
 'use client';
 
 import { useState, useEffect } from 'react';
-import { TagManager } from './TagManager';
-import { MovieGrid } from './MovieGrid';
-import { useTagManager } from './hooks/useTagManager';
+import { NetflixHero } from './NetflixHero';
+import { NetflixRow } from './NetflixRow';
 import { usePopularMovies } from './hooks/usePopularMovies';
 import { usePersonalizedRecommendations } from './hooks/usePersonalizedRecommendations';
 
@@ -17,153 +14,82 @@ interface PopularFeaturesProps {
   onSearch?: (query: string) => void;
 }
 
+const GENRE_ROWS = [
+  { tag: '动作', label: '动作大片' },
+  { tag: '喜剧', label: '喜剧' },
+  { tag: '爱情', label: '爱情' },
+  { tag: '科幻', label: '科幻' },
+  { tag: '剧情', label: '剧情' },
+  { tag: '悬疑', label: '悬疑犯罪' },
+];
+
+interface DoubanMovie {
+  id: string;
+  title: string;
+  cover: string;
+  rate: string;
+  url: string;
+}
+
 export function PopularFeatures({ onSearch }: PopularFeaturesProps) {
-  const {
-    tags,
-    selectedTag,
-    contentType,
-    newTagInput,
-    showTagManager,
-    justAddedTag,
-    setContentType,
-    setSelectedTag,
-    setNewTagInput,
-    setShowTagManager,
-    setJustAddedTag,
-    handleAddTag,
-    handleDeleteTag,
-    handleRestoreDefaults,
-    handleDragEnd,
-    isLoadingTags,
-  } = useTagManager();
+  const [contentType] = useState<'movie' | 'tv'>(() => {
+    if (typeof window === 'undefined') return 'movie';
+    return (localStorage.getItem('kvideo_default_content_type') || 'movie') as 'movie' | 'tv';
+  });
 
-  const {
-    movies: recommendMovies,
-    loading: recommendLoading,
-    hasMore: recommendHasMore,
-    hasHistory,
-    prefetchRef: recommendPrefetchRef,
-    loadMoreRef: recommendLoadMoreRef,
-  } = usePersonalizedRecommendations(false);
+  const heroTags = [{ id: 'popular', label: '热门', value: '热门' }];
+  const { movies: heroMovies, loading: heroLoading } = usePopularMovies('popular', heroTags, contentType);
 
-  // Track whether the recommendation tab is active
-  const [isRecommendSelected, setIsRecommendSelected] = useState(hasHistory);
+  const { movies: recommendMovies, loading: recommendLoading, hasHistory } = usePersonalizedRecommendations(false);
 
-  // Sync selection when hasHistory changes after Zustand hydration from localStorage.
-  // On first render the store is empty (hasHistory=false), so useState captures false.
-  // Once hydration completes and hasHistory becomes true, auto-select the recommendation tab.
+  const [allGenreRows, setAllGenreRows] = useState<any[]>([]);
+
   useEffect(() => {
-    if (hasHistory) {
-      setIsRecommendSelected(true);
-    }
-  }, [hasHistory]);
-
-  const effectiveRecommendSelected = hasHistory && isRecommendSelected;
-
-  const {
-    movies,
-    loading,
-    hasMore,
-    prefetchRef,
-    loadMoreRef,
-  } = usePopularMovies(
-    effectiveRecommendSelected ? '' : selectedTag,
-    tags,
-    contentType
-  );
-
-  const handleMovieClick = (movie: any) => {
-    if (onSearch) {
-      onSearch(movie.title);
-    }
-  };
-
-  const handleRecommendSelect = () => {
-    setIsRecommendSelected(true);
-  };
-
-  const handleRegularTagSelect = (tagId: string) => {
-    if (tagId === 'custom_高级' || tags.find(t => t.id === tagId)?.label === '高级') {
-      window.location.href = '/premium';
-      return;
-    }
-    setIsRecommendSelected(false);
-    setSelectedTag(tagId);
-  };
+    const loadAll = async () => {
+      const rows = await Promise.all(GENRE_ROWS.map(async (genre) => {
+        try {
+          const res = await fetch(`/api/douban/recommend?type=${contentType}&tag=${encodeURIComponent(genre.tag)}&page_limit=20&page_start=0`);
+          const data = await res.json();
+          return { ...genre, movies: data.subjects || [], loading: false };
+        } catch {
+          return { ...genre, movies: [], loading: false };
+        }
+      }));
+      setAllGenreRows(rows);
+    };
+    loadAll();
+  }, [contentType]);
 
   return (
     <div className="animate-fade-in">
-      {/* Content Type Toggle (Capsule Liquid Glass - Fixed & Centered) */}
-      {!effectiveRecommendSelected && (
-        <div className="mb-10 flex justify-center">
-          <div className="relative w-80 p-1 bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-full grid grid-cols-2 backdrop-blur-2xl shadow-lg ring-1 ring-white/10 overflow-hidden">
-            {/* Sliding Indicator */}
-            <div
-              className="absolute top-1 bottom-1 w-[calc(50%-4px)] bg-[var(--accent-color)] rounded-full transition-transform duration-400 cubic-bezier(0.4, 0, 0.2, 1) shadow-[0_0_15px_rgba(0,122,255,0.4)]"
-              style={{
-                transform: `translateX(${contentType === 'movie' ? '4px' : 'calc(100% + 4px)'})`,
-              }}
-            />
-
-            <button
-              onClick={() => setContentType('movie')}
-              className={`relative z-10 py-2.5 text-sm font-bold transition-colors duration-300 cursor-pointer flex justify-center items-center ${contentType === 'movie' ? 'text-white' : 'text-[var(--text-color-secondary)] hover:text-[var(--text-color)]'
-                }`}
-            >
-              电影
-            </button>
-            <button
-              onClick={() => setContentType('tv')}
-              className={`relative z-10 py-2.5 text-sm font-bold transition-colors duration-300 cursor-pointer flex justify-center items-center ${contentType === 'tv' ? 'text-white' : 'text-[var(--text-color-secondary)] hover:text-[var(--text-color)]'
-                }`}
-            >
-              电视剧
-            </button>
-          </div>
-        </div>
-      )}
-
-      <TagManager
-        tags={tags}
-        selectedTag={effectiveRecommendSelected ? '' : selectedTag}
-        showTagManager={showTagManager}
-        newTagInput={newTagInput}
-        justAddedTag={justAddedTag}
-        onTagSelect={handleRegularTagSelect}
-        onTagDelete={handleDeleteTag}
-        onToggleManager={() => setShowTagManager(!showTagManager)}
-        onRestoreDefaults={handleRestoreDefaults}
-        onNewTagInputChange={setNewTagInput}
-        onAddTag={handleAddTag}
-        onDragEnd={handleDragEnd}
-        onJustAddedTagHandled={() => setJustAddedTag(false)}
-        isLoadingTags={isLoadingTags}
-        recommendTag={hasHistory ? {
-          label: '为你推荐',
-          isSelected: effectiveRecommendSelected,
-          onSelect: handleRecommendSelect,
-        } : undefined}
+      <NetflixHero
+        movies={heroMovies}
+        loading={heroLoading}
+        onMovieClick={(movie) => onSearch?.(movie.title)}
       />
 
-      {effectiveRecommendSelected ? (
-        <MovieGrid
-          movies={recommendMovies}
-          loading={recommendLoading}
-          hasMore={recommendHasMore}
-          onMovieClick={handleMovieClick}
-          prefetchRef={recommendPrefetchRef}
-          loadMoreRef={recommendLoadMoreRef}
-        />
-      ) : (
-        <MovieGrid
-          movies={movies}
-          loading={loading}
-          hasMore={hasMore}
-          onMovieClick={handleMovieClick}
-          prefetchRef={prefetchRef}
-          loadMoreRef={loadMoreRef}
-        />
-      )}
+      <div className="relative z-10 -mt-20">
+        {hasHistory && recommendMovies.length > 0 && (
+          <NetflixRow
+            title="为你推荐"
+            movies={recommendMovies}
+            loading={recommendLoading}
+            hasMore
+            onMovieClick={(movie) => onSearch?.(movie.title)}
+          />
+        )}
+
+        {allGenreRows.map((row) => (
+          <NetflixRow
+            key={row.tag}
+            title={row.label}
+            movies={row.movies}
+            loading={row.loading}
+            hasMore
+            onMovieClick={(movie) => onSearch?.(movie.title)}
+          />
+        ))}
+      </div>
     </div>
   );
 }
