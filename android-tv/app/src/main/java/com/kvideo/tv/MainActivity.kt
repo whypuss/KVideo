@@ -37,6 +37,7 @@ class MainActivity : ComponentActivity() {
         private const val PREFS_NAME = "kvideo_tv_settings"
         private const val PREF_SERVER_URL = "server_url"
         private const val TAG = "KVideoMainActivity"
+        private const val DOUBLE_CLICK_DELAY_MS = 300L
     }
 
     private lateinit var webView: WebView
@@ -50,6 +51,7 @@ class MainActivity : ComponentActivity() {
     private var customView: View? = null
     private var customViewCallback: CustomViewCallback? = null
     private var wasSetupVisibleBeforeFullscreen = false
+    private var lastCenterClickTime: Long = 0L
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -162,8 +164,17 @@ class MainActivity : ComponentActivity() {
             return true
         }
 
-        // Map D-pad center to Enter for spatial navigation
+        // Double-click DPAD_CENTER to toggle fullscreen
         if (!isSetupVisible() && keyCode == KeyEvent.KEYCODE_DPAD_CENTER) {
+            val currentTime = System.currentTimeMillis()
+            if (currentTime - lastCenterClickTime < DOUBLE_CLICK_DELAY_MS) {
+                // Double-click detected - toggle fullscreen
+                toggleFullscreen()
+                lastCenterClickTime = 0L
+                return true
+            }
+            lastCenterClickTime = currentTime
+            // Single click - map to Enter for spatial navigation
             webView.dispatchKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_ENTER))
             return true
         }
@@ -182,7 +193,7 @@ class MainActivity : ComponentActivity() {
     override fun onBackPressed() {
         if (customView != null) {
             exitCustomFullscreen()
-            return
+            return true
         }
 
         if (isSetupVisible()) {
@@ -374,6 +385,52 @@ class MainActivity : ComponentActivity() {
         )
     }
 
+    /**
+     * Toggle fullscreen by injecting JavaScript to find the video element
+     * and request HTML5 fullscreen.
+     */
+    private fun toggleFullscreen() {
+        if (customView != null) {
+            exitCustomFullscreen()
+            return
+        }
+
+        val js = """
+            (function() {
+                try {
+                    var video = document.querySelector('video');
+                    if (video) {
+                        window._kvideo_fullscreen_video = video;
+                        if (video.requestFullscreen) {
+                            video.requestFullscreen();
+                        } else if (video.webkitEnterFullscreen) {
+                            video.webkitEnterFullscreen();
+                        } else if (video.webkitRequestFullscreen) {
+                            video.webkitRequestFullscreen();
+                        } else if (video.mozRequestFullScreen) {
+                            video.mozRequestFullScreen();
+                        } else if (video.msRequestFullscreen) {
+                            video.msRequestFullscreen();
+                        } else {
+                            return false;
+                        }
+                        return true;
+                    }
+                    return false;
+                } catch(e) {
+                    console.error('KVideo: Fullscreen error:', e);
+                    return false;
+                }
+            })()
+        """.trimIndent()
+
+        webView.post {
+            webView.evaluateJavascript(js) { result ->
+                Log.d(TAG, "Fullscreen request result: $result")
+            }
+        }
+    }
+
     private inner class AndroidPlayerBridge {
         @JavascriptInterface
         fun isPictureInPictureSupported(): Boolean = this@MainActivity.isPictureInPictureSupported()
@@ -420,6 +477,36 @@ class MainActivity : ComponentActivity() {
                 Log.w(TAG, "Interrupted while waiting for Picture-in-Picture result", error)
                 false
             }
+        }
+
+        @JavascriptInterface
+        fun enterFullscreen(): Boolean {
+            if (customView != null) {
+                exitCustomFullscreen()
+                return true
+            }
+
+            val js = """
+                (function() {
+                    try {
+                        var video = document.querySelector('video');
+                        if (video && video.requestFullscreen) {
+                            video.requestFullscreen();
+                            return true;
+                        }
+                        return false;
+                    } catch(e) {
+                        return false;
+                    }
+                })()
+            """.trimIndent()
+
+            webView.post {
+                webView.evaluateJavascript(js) { result ->
+                    Log.d(TAG, "JS enterFullscreen result: $result")
+                }
+            }
+            return true
         }
     }
 }
