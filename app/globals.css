@@ -27,3 +27,9 @@
 .no-spinner {
   -moz-appearance: textfield;
 }
+
+
+/* Hide search bar and navigation icons in TV mode */
+body.tv-mode [data-tv-hide] {
+    display: none !important;
+}
