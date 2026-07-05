@@ -1,8 +1,7 @@
-'use client';
+use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { SearchBox } from '@/components/search/SearchBox';
 
 export function SearchModal() {
   const [isOpen, setIsOpen] = useState(false);
@@ -28,42 +27,42 @@ export function SearchModal() {
     return () => document.removeEventListener('keydown', handleKey);
   }, [isOpen]);
 
-  const close = useCallback(() => {
+  const close = () => {
     setIsOpen(false);
     setQuery('');
     setIsLoading(false);
-  }, []);
+  };
 
-  const handleSearch = useCallback((searchQuery: string) => {
+  const handleSearch = (searchQuery: string) => {
     setIsLoading(true);
     setTimeout(() => {
       router.push(`/?q=${encodeURIComponent(searchQuery)}`);
       close();
     }, 100);
-  }, [router, close]);
+  };
 
   if (!isOpen) return null;
 
   return (
     <div
-      className="fixed inset-0 z-[3000] flex items-start justify-center pt-20 bg-black/70 backdrop-blur-sm animate-fade-in"
+      className="fixed inset-0 z-[3000] flex items-start justify-center pt-20 bg-black/80 backdrop-blur-sm"
       onClick={(e) => { if (e.target === e.currentTarget) close(); }}
     >
       <div className="w-full max-w-2xl mx-4">
         <div className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-2xl p-4 shadow-2xl">
-          <SearchBox
-            onSearch={handleSearch}
-            onClear={() => setQuery('')}
-            initialQuery={query}
-            isLoading={isLoading}
-          />
-          {isLoading && (
-            <div className="mt-4 flex items-center gap-3 px-2">
-              <div className="animate-spin h-4 w-4 border-2 border-[var(--accent-color)] border-t-transparent rounded-full" />
-              <span className="text-sm text-[var(--text-muted)]">搜索中...</span>
-              <button onClick={close} className="ml-auto text-sm text-[var(--text-muted)] hover:text-[var(--accent-color)] transition cursor-pointer">取消</button>
-            </div>
-          )}
+          <div className="relative">
+            <svg className="absolute left-3 top-1/2 -translate-y-1/2" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleSearch(query); }}
+              placeholder="搜尋電影、電視劇、動漫..."
+              className="w-full pl-10 pr-10 py-3 bg-transparent text-[var(--text-color)] placeholder:text-[var(--text-muted)] outline-none text-sm"
+              autoFocus
+            />
+            <button onClick={close} className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-white transition cursor-pointer">&times;</button>
+          </div>
         </div>
       </div>
     </div>
