@@ -1,7 +1,6 @@
 'use client';
 
 import { Suspense, useMemo } from 'react';
-import { SearchForm } from '@/components/search/SearchForm';
 import { NoResults } from '@/components/search/NoResults';
 import { PopularFeatures } from '@/components/home/PopularFeatures';
 import { FavoritesSidebar } from '@/components/favorites/FavoritesSidebar';
@@ -38,24 +37,8 @@ function HomePage() {
   return (
     <div className="min-h-screen">
       {/* Glass Navbar */}
-      <Navbar onReset={handleReset} />
+      <Navbar onReset={handleReset} onSearch={handleSearch} query={query} />
 
-      {/* Search Form - Separate from navbar */}
-      <div className="max-w-7xl mx-auto px-4 mt-6 mb-8 relative" style={{
-        transform: 'translate3d(0, 0, 0)',
-        zIndex: 1000
-      }} data-tv-hide>
-        <SearchForm
-          onSearch={handleSearch}
-          onClear={handleReset}
-          onCancelSearch={handleCancelSearch}
-          isLoading={loading}
-          initialQuery={query}
-          currentSource=""
-          checkedSources={completedSources}
-          totalSources={totalSources}
-        />
-      </div>
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
