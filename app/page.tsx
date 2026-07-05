@@ -1,4 +1,4 @@
-use client';
+'use client';
 
 import { Suspense, useMemo } from 'react';
 import { NoResults } from '@/components/search/NoResults';
