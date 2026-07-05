@@ -26,9 +26,9 @@ export function Navbar({ onReset, isPremiumMode = false }: NavbarProps) {
     const { iptvEnabled } = useRuntimeFeatures();
     const siteIconSrc = useSiteIcon();
     const isTV = useIsTV();
-    const { viewingHistory: normalHistory } = useHistoryStore();
+    const { viewingHistory } = useHistoryStore();
     const { viewingHistory: premiumHistory } = usePremiumHistoryStore();
-    const historyCount = isPremiumMode ? premiumHistory.length : normalHistory.viewingHistory.length;
+    const historyCount = isPremiumMode ? premiumHistory.length : viewingHistory.length;
 
     const handleLogout = () => {
         fetch('/api/auth/session', { method: 'DELETE' })
