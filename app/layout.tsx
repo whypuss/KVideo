@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import { BackToTop } from '@/components/ui/BackToTop';
+import { SearchModal } from '@/components/SearchModal';
 import { SiteIconProvider } from '@/components/SiteIconProvider';
 import { RuntimeFeaturesProvider } from '@/components/RuntimeFeaturesProvider';
 import { TVProvider } from '@/lib/contexts/TVContext';
@@ -21,6 +22,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                     <RuntimeFeaturesProvider>
                         <TVProvider>
                             {children}
+        <SearchModal />
                             
                             <BackToTop />
                         </TVProvider>
