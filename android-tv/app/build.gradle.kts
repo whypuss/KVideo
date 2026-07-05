@@ -5,7 +5,7 @@ plugins {
 
 val defaultKVideoUrl = providers
     .gradleProperty("kvideoUrl")
-    .orElse("")
+    .orElse("http://192.168.31.55:5588")
     .get()
     .replace("\\", "\\\\")
     .replace("\"", "\\\"")
