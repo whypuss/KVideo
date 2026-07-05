@@ -1,4 +1,4 @@
-'use client';
+use client';
 
 import { useState } from 'react';
 import { usePathname } from 'next/navigation';
@@ -19,9 +19,7 @@ export default function HistoryPage() {
             <Navbar onReset={() => {}} />
             <div className="max-w-4xl mx-auto px-4 py-8">
                 <div className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-[var(--radius-2xl)] overflow-hidden">
-                    <HistoryHeader
-                        onClose={() => {}}
-                    />
+                    <HistoryHeader onClose={() => {}} />
                     <div className="p-4 border-b border-[var(--glass-border)] flex items-center justify-between">
                         <span className="text-sm text-[var(--text-muted)]">{viewingHistory.length} 條記錄</span>
                         <button onClick={() => setDeleteConfirm({ isOpen: true })}
