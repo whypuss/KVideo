@@ -70,26 +70,25 @@ class MainActivity : ComponentActivity() {
         openButton = findViewById(R.id.open_button)
         saveButton = findViewById(R.id.save_button)
 
+        // Block keyboard on URL input
+        urlInput.showSoftInputOnFocus = false
+        urlInput.setOnFocusChangeListener { _, hasFocus ->
+            if (hasFocus) {
+                hideKeyboard()
+            }
+        }
+
         saveButton.setOnClickListener {
+            hideKeyboard()
             openConfiguredUrl()
         }
         urlInput.setOnEditorActionListener { _, actionId, event ->
-            val isKeyboardConfirmAction = actionId == EditorInfo.IME_NULL ||
-                actionId == EditorInfo.IME_ACTION_DONE ||
-                actionId == EditorInfo.IME_ACTION_GO ||
-                actionId == EditorInfo.IME_ACTION_SEND ||
-                actionId == EditorInfo.IME_ACTION_NEXT
-            val isEnterKey = event?.action == KeyEvent.ACTION_DOWN && (
-                event.keyCode == KeyEvent.KEYCODE_ENTER ||
-                    event.keyCode == KeyEvent.KEYCODE_NUMPAD_ENTER
-                )
-
-            if (isKeyboardConfirmAction || isEnterKey) {
+            val isEnter = event?.keyCode == KeyEvent.KEYCODE_ENTER
+            if (isEnter) {
+                hideKeyboard()
                 openConfiguredUrl()
                 true
-            } else {
-                false
-            }
+            } else false
         }
 
         webView.apply {
@@ -113,16 +112,13 @@ class MainActivity : ComponentActivity() {
                         callback?.onCustomViewHidden()
                         return
                     }
-
                     if (customView != null) {
                         callback.onCustomViewHidden()
                         return
                     }
-
                     wasSetupVisibleBeforeFullscreen = isSetupVisible()
                     customView = view
                     customViewCallback = callback
-
                     fullscreenContainer.removeAllViews()
                     fullscreenContainer.addView(
                         view,
@@ -164,25 +160,22 @@ class MainActivity : ComponentActivity() {
             return true
         }
 
-        // Double-click DPAD_CENTER to toggle fullscreen
-        if (!isSetupVisible() && keyCode == KeyEvent.KEYCODE_DPAD_CENTER) {
-            val currentTime = System.currentTimeMillis()
-            if (currentTime - lastCenterClickTime < DOUBLE_CLICK_DELAY_MS) {
-                // Double-click detected - toggle fullscreen
+        // Double-click DPAD_DOWN for fullscreen
+        if (!isSetupVisible() && keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {
+            val now = System.currentTimeMillis()
+            if (now - lastCenterClickTime < DOUBLE_CLICK_DELAY_MS) {
                 toggleFullscreen()
                 lastCenterClickTime = 0L
                 return true
             }
-            lastCenterClickTime = currentTime
-            // Single click - map to Enter for spatial navigation
-            webView.dispatchKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_ENTER))
-            return true
+            lastCenterClickTime = now
+            return super.onKeyDown(keyCode, event)
         }
         return super.onKeyDown(keyCode, event)
     }
 
     override fun onKeyUp(keyCode: Int, event: KeyEvent?): Boolean {
-        if (!isSetupVisible() && keyCode == KeyEvent.KEYCODE_DPAD_CENTER) {
+        if (!isSetupVisible() && keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {
             webView.dispatchKeyEvent(KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_ENTER))
             return true
         }
@@ -195,13 +188,11 @@ class MainActivity : ComponentActivity() {
             exitCustomFullscreen()
             return
         }
-
         if (isSetupVisible()) {
             @Suppress("DEPRECATION")
             super.onBackPressed()
             return
         }
-
         if (webView.canGoBack()) {
             webView.goBack()
         } else {
@@ -218,6 +209,7 @@ class MainActivity : ComponentActivity() {
         super.onWindowFocusChanged(hasFocus)
         if (hasFocus) {
             applyImmersiveMode()
+            hideKeyboard()
         }
     }
 
@@ -238,6 +230,12 @@ class MainActivity : ComponentActivity() {
         super.onDestroy()
     }
 
+    private fun hideKeyboard() {
+        val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as? android.view.inputmethod.InputMethodManager
+        imm?.hideSoftInputFromWindow(window.decorView.windowToken, 0)
+        window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN)
+    }
+
     private fun openConfiguredUrl() {
         val normalizedUrl = normalizeUrl(urlInput.text.toString())
         if (!isValidUrl(normalizedUrl)) {
@@ -245,7 +243,6 @@ class MainActivity : ComponentActivity() {
             urlInput.requestFocus()
             return
         }
-
         prefs.edit().putString(PREF_SERVER_URL, normalizedUrl).apply()
         loadConfiguredUrl(normalizedUrl)
     }
@@ -261,7 +258,6 @@ class MainActivity : ComponentActivity() {
         if (currentUrl.isNotEmpty() && urlInput.text.toString().isBlank()) {
             urlInput.setText(currentUrl)
         }
-
         if (currentUrl.isNotEmpty()) {
             openButton.text = getString(R.string.button_open_saved)
             openButton.setOnClickListener {
@@ -274,7 +270,6 @@ class MainActivity : ComponentActivity() {
                 finish()
             }
         }
-
         statusText.text = message
         setupContainer.visibility = View.VISIBLE
         urlInput.requestFocus()
@@ -282,10 +277,7 @@ class MainActivity : ComponentActivity() {
 
     private fun getConfiguredUrl(): String {
         val savedUrl = prefs.getString(PREF_SERVER_URL, null)?.trim().orEmpty()
-        if (isValidUrl(savedUrl)) {
-            return savedUrl
-        }
-
+        if (isValidUrl(savedUrl)) return savedUrl
         val defaultUrl = normalizeUrl(BuildConfig.DEFAULT_KVIDEO_URL)
         return if (isValidUrl(defaultUrl)) defaultUrl else ""
     }
@@ -294,27 +286,16 @@ class MainActivity : ComponentActivity() {
 
     private fun normalizeUrl(rawUrl: String): String {
         val trimmed = rawUrl.trim()
-        if (trimmed.isEmpty()) {
-            return ""
-        }
-
-        val withScheme = if (
-            trimmed.startsWith("http://", ignoreCase = true) ||
-            trimmed.startsWith("https://", ignoreCase = true)
-        ) {
+        if (trimmed.isEmpty()) return ""
+        return if (trimmed.startsWith("http://", ignoreCase = true) || trimmed.startsWith("https://", ignoreCase = true)) {
             trimmed
         } else {
             "https://$trimmed"
-        }
-
-        return withScheme.removeSuffix("/")
+        }.removeSuffix("/")
     }
 
     private fun isValidUrl(url: String): Boolean {
-        if (url.isBlank()) {
-            return false
-        }
-
+        if (url.isBlank()) return false
         val uri = Uri.parse(url)
         val scheme = uri.scheme?.lowercase()
         return (scheme == "http" || scheme == "https") && !uri.host.isNullOrBlank()
@@ -324,11 +305,11 @@ class MainActivity : ComponentActivity() {
         @Suppress("DEPRECATION")
         window.decorView.systemUiVisibility = (
             View.SYSTEM_UI_FLAG_FULLSCREEN
-                or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-                or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                or View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+            or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+            or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+            or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+            or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+            or View.SYSTEM_UI_FLAG_LAYOUT_STABLE
         )
     }
 
@@ -348,10 +329,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun isPictureInPictureSupported(): Boolean {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
-            return false
-        }
-
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return false
         return packageManager.hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)
     }
 
@@ -361,21 +339,14 @@ class MainActivity : ComponentActivity() {
                 detail: { inPictureInPicture: ${if (isInPictureInPictureMode) "true" else "false"} }
             }));
         """.trimIndent()
-
         webView.post {
-            try {
-                webView.evaluateJavascript(js, null)
-            } catch (error: Throwable) {
-                Log.w(TAG, "Failed to dispatch Picture-in-Picture change event", error)
-            }
+            try { webView.evaluateJavascript(js, null) }
+            catch (error: Throwable) { Log.w(TAG, "Failed to dispatch PiP change", error) }
         }
     }
 
     private fun createSourceRectHint(left: Int, top: Int, right: Int, bottom: Int): Rect? {
-        if (right <= left || bottom <= top) {
-            return null
-        }
-
+        if (right <= left || bottom <= top) return null
         val density = resources.displayMetrics.density
         return Rect(
             (left * density).roundToInt(),
@@ -385,49 +356,53 @@ class MainActivity : ComponentActivity() {
         )
     }
 
-    /**
-     * Toggle fullscreen by injecting JavaScript to find the video element
-     * and request HTML5 fullscreen.
-     */
     private fun toggleFullscreen() {
         if (customView != null) {
             exitCustomFullscreen()
             return
         }
-
         val js = """
             (function() {
                 try {
                     var video = document.querySelector('video');
-                    if (video) {
-                        window._kvideo_fullscreen_video = video;
-                        if (video.requestFullscreen) {
-                            video.requestFullscreen();
-                        } else if (video.webkitEnterFullscreen) {
-                            video.webkitEnterFullscreen();
-                        } else if (video.webkitRequestFullscreen) {
-                            video.webkitRequestFullscreen();
-                        } else if (video.mozRequestFullScreen) {
-                            video.mozRequestFullScreen();
-                        } else if (video.msRequestFullscreen) {
-                            video.msRequestFullscreen();
-                        } else {
-                            return false;
-                        }
+                    if (!video) { console.warn('KVideo: No video element'); return false; }
+                    window._kvideo_fullscreen_video = video;
+                    
+                    // Check if already simulated fullscreen
+                    if (document.body.classList.contains('kvideo-simulated-fullscreen')) {
+                        document.body.classList.remove('kvideo-simulated-fullscreen');
+                        video.style.cssText = '';
                         return true;
                     }
-                    return false;
-                } catch(e) {
-                    console.error('KVideo: Fullscreen error:', e);
-                    return false;
-                }
+                    
+                    // Try HTML5 fullscreen
+                    if (video.requestFullscreen) {
+                        var p = video.requestFullscreen();
+                        if (p && typeof p.then === 'function') {
+                            p.catch(function(e) {
+                                console.warn('KVideo: HTML5 fullscreen failed:', e);
+                                simulateFullscreen(video);
+                            });
+                            return true;
+                        }
+                    }
+                    if (video.webkitEnterFullscreen) { video.webkitEnterFullscreen(); return true; }
+                    if (video.webkitRequestFullscreen) { video.webkitRequestFullscreen(); return true; }
+                    if (video.mozRequestFullScreen) { video.mozRequestFullScreen(); return true; }
+                    if (video.msRequestFullscreen) { video.msRequestFullscreen(); return true; }
+                    
+                    simulateFullscreen(video);
+                    return true;
+                } catch(e) { console.error('KVideo fullscreen error:', e); return false; }
             })()
-        """.trimIndent()
-
-        webView.post {
-            webView.evaluateJavascript(js) { result ->
-                Log.d(TAG, "Fullscreen request result: $result")
+            function simulateFullscreen(video) {
+                document.body.classList.add('kvideo-simulated-fullscreen');
+                video.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:9999;object-fit:contain;background:#000;';
+                console.log('KVideo: Simulated fullscreen');
             }
+        """.trimIndent()
+        webView.post {
+            webView.evaluateJavascript(js) { result -> Log.d(TAG, "Fullscreen result: $result") }
         }
     }
 
@@ -436,76 +411,27 @@ class MainActivity : ComponentActivity() {
         fun isPictureInPictureSupported(): Boolean = this@MainActivity.isPictureInPictureSupported()
 
         @JavascriptInterface
-        fun enterPictureInPicture(
-            width: Int,
-            height: Int,
-            left: Int,
-            top: Int,
-            right: Int,
-            bottom: Int
-        ): Boolean {
-            if (!this@MainActivity.isPictureInPictureSupported()) {
-                return false
-            }
-
+        fun enterPictureInPicture(width: Int, height: Int, left: Int, top: Int, right: Int, bottom: Int): Boolean {
+            if (!this@MainActivity.isPictureInPictureSupported()) return false
             val didEnterPiP = AtomicBoolean(false)
             val latch = CountDownLatch(1)
-
             runOnUiThread {
                 try {
                     val builder = android.app.PictureInPictureParams.Builder()
-                    if (width > 0 && height > 0) {
-                        builder.setAspectRatio(Rational(width, height))
-                    }
+                    if (width > 0 && height > 0) builder.setAspectRatio(Rational(width, height))
                     createSourceRectHint(left, top, right, bottom)?.let(builder::setSourceRectHint)
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                        builder.setSeamlessResizeEnabled(true)
-                    }
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) builder.setSeamlessResizeEnabled(true)
                     didEnterPiP.set(enterPictureInPictureMode(builder.build()))
-                } catch (error: IllegalStateException) {
-                    Log.w(TAG, "Failed to enter Picture-in-Picture mode", error)
-                } finally {
-                    latch.countDown()
-                }
+                } catch (error: IllegalStateException) { Log.w(TAG, "Failed to enter PiP", error) }
+                finally { latch.countDown() }
             }
-
-            return try {
-                latch.await(1500, TimeUnit.MILLISECONDS)
-                didEnterPiP.get()
-            } catch (error: InterruptedException) {
-                Thread.currentThread().interrupt()
-                Log.w(TAG, "Interrupted while waiting for Picture-in-Picture result", error)
-                false
-            }
+            return try { latch.await(1500, TimeUnit.MILLISECONDS); didEnterPiP.get() }
+            catch (e: InterruptedException) { Thread.currentThread().interrupt(); false }
         }
 
         @JavascriptInterface
         fun enterFullscreen(): Boolean {
-            if (customView != null) {
-                exitCustomFullscreen()
-                return true
-            }
-
-            val js = """
-                (function() {
-                    try {
-                        var video = document.querySelector('video');
-                        if (video && video.requestFullscreen) {
-                            video.requestFullscreen();
-                            return true;
-                        }
-                        return false;
-                    } catch(e) {
-                        return false;
-                    }
-                })()
-            """.trimIndent()
-
-            webView.post {
-                webView.evaluateJavascript(js) { result ->
-                    Log.d(TAG, "JS enterFullscreen result: $result")
-                }
-            }
+            toggleFullscreen()
             return true
         }
     }
