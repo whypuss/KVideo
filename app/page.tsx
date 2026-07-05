@@ -44,7 +44,7 @@ function HomePage() {
       <div className="max-w-7xl mx-auto px-4 mt-6 mb-8 relative" style={{
         transform: 'translate3d(0, 0, 0)',
         zIndex: 1000
-      }}>
+      }} data-tv-hide>
         <SearchForm
           onSearch={handleSearch}
           onClear={handleReset}
