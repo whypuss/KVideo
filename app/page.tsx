@@ -7,6 +7,7 @@ import { SearchResults } from '@/components/home/SearchResults';
 import { useHomePage } from '@/lib/hooks/useHomePage';
 import { useLatencyPing } from '@/lib/hooks/useLatencyPing';
 import { PopularFeatures } from '@/components/home/PopularFeatures';
+import { SearchModal } from '@/components/SearchModal';
 
 function HomePage() {
   const {
@@ -34,6 +35,7 @@ function HomePage() {
 
   return (
     <div className="min-h-screen">
+      <SearchModal />
       <Navbar onReset={handleReset} />
 
       <main className="pb-20">
