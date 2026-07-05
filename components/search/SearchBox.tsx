@@ -5,6 +5,7 @@ import { Icons } from '@/components/ui/Icon';
 import { SearchHistoryDropdown } from '@/components/search/SearchHistoryDropdown';
 import { useSearchHistory } from '@/lib/hooks/useSearchHistory';
 import { useSearchBoxHandlers } from './hooks/useSearchBoxHandlers';
+import { useIsTV } from '@/lib/contexts/TVContext';
 
 interface SearchBoxProps {
     onSearch: (query: string) => void;
@@ -17,8 +18,8 @@ interface SearchBoxProps {
 export function SearchBox({ onSearch, onClear, initialQuery = '', placeholder = '搜索电影、电视剧、综艺...', isPremium = false }: SearchBoxProps) {
     const [query, setQuery] = useState(initialQuery);
     const inputRef = useRef<HTMLInputElement>(null);
+    const isTV = useIsTV();
 
-    // Search history hook
     const {
         searchHistory,
         isDropdownOpen,
@@ -34,11 +35,9 @@ export function SearchBox({ onSearch, onClear, initialQuery = '', placeholder = 
     } = useSearchHistory((selectedQuery) => {
         setQuery(selectedQuery);
         onSearch(selectedQuery);
-        // Blur the input after selecting from history
         inputRef.current?.blur();
     }, isPremium);
 
-    // Update query when initialQuery changes
     useEffect(() => {
         setQuery(initialQuery);
     }, [initialQuery]);
@@ -58,67 +57,53 @@ export function SearchBox({ onSearch, onClear, initialQuery = '', placeholder = 
         isDropdownOpen,
         highlightedIndex,
         searchHistory,
-        addSearch,
-        hideDropdown,
-        showDropdown,
-        resetHighlight,
         selectHistoryItem,
+        showDropdown,
+        hideDropdown,
+        addSearch,
+        removeSearch,
+        clearAll,
         navigateDropdown,
+        resetHighlight,
     });
 
     return (
-        <form onSubmit={handleSubmit} className="relative group" style={{ isolation: 'isolate' }}>
-            <Input
-                ref={inputRef}
-                type="text"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                onFocus={handleInputFocus}
-                onBlur={handleInputBlur}
-                onKeyDown={handleKeyDown}
-                placeholder={placeholder}
-                className="text-base sm:text-lg pr-28 sm:pr-36 md:pr-44 truncate"
-                aria-label="搜索视频内容"
-                aria-expanded={isDropdownOpen}
-                aria-controls="search-history-dropdown"
-                aria-autocomplete="list"
-                data-focusable
-                autoComplete="off"
-            />
-
-            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 z-10">
+        <form onSubmit={handleSubmit} className="relative">
+            <div className="relative flex items-center">
+                <Input
+                    ref={inputRef}
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    onFocus={handleInputFocus}
+                    onBlur={handleInputBlur}
+                    onKeyDown={handleKeyDown}
+                    placeholder={placeholder}
+                    className="w-full pr-12 pl-4"
+                    autoComplete="off"
+                    autoCapitalize="off"
+                    spellCheck={false}
+                    inputMode={isTV ? 'none' : 'text'}
+                />
                 {query && (
-                    <button
-                        type="button"
-                        onClick={handleClear}
-                        className="p-2 text-[var(--text-color)] opacity-70 hover:opacity-100 transition-opacity touch-manipulation cursor-pointer"
-                        aria-label="清除搜索"
-                    >
-                        <Icons.X size={20} />
+                    <button type="button" onClick={handleClear}
+                        className="absolute right-12 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition cursor-pointer"
+                        data-no-spatial>
+                        <Icons.X size={16} />
                     </button>
                 )}
-                <Button
-                    type="submit"
-                    disabled={!query.trim()}
-                    variant="primary"
-                    className="px-3 sm:px-4 md:px-6"
-                >
-                    <span className="flex items-center gap-2">
-                        <Icons.Search size={20} />
-                        <span className="hidden sm:inline">搜索</span>
-                    </span>
+                <Button type="submit" variant="ghost" size="icon" className="absolute right-2 top-1/2 -translate-y-1/2" data-no-spatial>
+                    <Icons.Search size={20} />
                 </Button>
             </div>
-
-            {/* Search History Dropdown */}
             <SearchHistoryDropdown
                 isOpen={isDropdownOpen}
                 searchHistory={searchHistory}
                 highlightedIndex={highlightedIndex}
-                triggerRef={inputRef}
-                onSelectItem={selectHistoryItem}
-                onRemoveItem={removeSearch}
+                onSelect={selectHistoryItem}
+                onRemove={removeSearch}
                 onClearAll={clearAll}
+                onNavigate={navigateDropdown}
+                onMouseLeave={hideDropdown}
             />
         </form>
     );
