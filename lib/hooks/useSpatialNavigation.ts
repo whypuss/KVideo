@@ -1,8 +1,7 @@
 /**
  * useSpatialNavigation
  * Provides D-pad/arrow key based 2D spatial navigation for TV mode.
- * Finds all [data-focusable] elements and navigates between them
- * based on directional arrow key presses.
+ * Only navigates video cards - filters out all chrome elements (nav, search, badges, etc.)
  */
 
 import { useEffect, useCallback } from 'react';
@@ -21,31 +20,40 @@ function getCenter(rect: DOMRect): { x: number; y: number } {
 type Direction = 'up' | 'down' | 'left' | 'right';
 
 /**
- * Check if an element is navigable (not a small icon, not hidden, not in a no-spatial zone)
+ * Check if an element is a navigable video card.
+ * Only elements that are large, rectangular, and likely video cards pass.
  */
 function isNavigable(el: Element): boolean {
   const rect = getRect(el);
-  const MIN_NAVIGABLE_SIZE = 30;
-  const MIN_NAVIGABLE_AREA = 900;
+  const MIN_SIZE = 120;     // Minimum 120px wide OR tall
+  const MIN_AREA = 12000;   // Minimum area (e.g., 120x100)
 
-  // Skip elements that are too small (icons, buttons in header/nav)
-  if (rect.width < MIN_NAVIGABLE_SIZE || rect.height < MIN_NAVIGABLE_SIZE) return false;
-  if (rect.width * rect.height < MIN_NAVIGABLE_AREA) return false;
+  if (rect.width < MIN_SIZE && rect.height < MIN_SIZE) return false;
+  if (rect.width * rect.height < MIN_AREA) return false;
 
-  // Skip elements with [data-no-spatial] attribute themselves
+  // Skip hidden/disabled
+  if (el.hasAttribute('hidden') || getComputedStyle(el).visibility === 'hidden') return false;
+  if (el.hasAttribute('disabled')) return false;
+
+  // Skip elements with data-no-spatial
   if (el.hasAttribute('data-no-spatial')) return false;
 
-  // Skip elements inside [data-no-spatial] containers (check all ancestors)
+  // Skip elements inside no-spatial containers
   if (el.closest('[data-no-spatial]')) return false;
 
-  // Skip elements inside <header>, <nav>, <aside> tags (chrome/UI navigation)
+  // Skip chrome: header, nav, aside
   if (el.closest('header, nav, aside')) return false;
 
-  // Skip hidden elements
-  if (el.hasAttribute('hidden') || getComputedStyle(el).visibility === 'hidden') return false;
+  // Skip search input and search-related containers
+  if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') return false;
+  if (el.closest('input, textarea')) return false;
 
-  // Skip disabled elements
-  if (el.hasAttribute('disabled')) return false;
+  // Skip elements inside <form> tags (search box)
+  if (el.closest('form')) return false;
+
+  // Skip badge-like elements (inline-flex with small padding)
+  const style = getComputedStyle(el);
+  if (style.display === 'inline-flex' || style.display === 'inline-block') return false;
 
   return true;
 }
@@ -106,38 +114,34 @@ export function useSpatialNavigation(enabled: boolean) {
     };
 
     const direction = directionMap[e.key];
+    if (!direction) return;
+
     const target = e.target as HTMLElement;
     const isInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable;
+    if (isInput) return;
 
-    if (isInput) {
-      if (!direction || direction === 'left' || direction === 'right') return;
-      if (e.defaultPrevented) return;
+    const focused = document.activeElement as HTMLElement | null;
+    if (focused?.closest('[data-no-spatial]')) return;
+
+    const focusableElements = Array.from(
+      document.querySelectorAll('[data-focusable]:not([disabled]):not([aria-hidden="true"])')
+    ).filter(isNavigable);
+
+    if (focusableElements.length === 0) return;
+
+    const currentFocused = document.activeElement;
+    const isAlreadyFocused = currentFocused && focusableElements.includes(currentFocused);
+
+    if (!isAlreadyFocused) {
+      (focusableElements[0] as HTMLElement).focus();
+      e.preventDefault();
+      return;
     }
 
-    if (direction) {
-      const focused = document.activeElement as HTMLElement | null;
-      if (focused?.closest('[data-no-spatial]')) return;
-
-      const focusableElements = Array.from(
-        document.querySelectorAll('[data-focusable]:not([disabled]):not([aria-hidden="true"])')
-      ).filter(isNavigable);
-
-      if (focusableElements.length === 0) return;
-
-      const currentFocused = document.activeElement;
-      const isAlreadyFocused = currentFocused && focusableElements.includes(currentFocused);
-
-      if (!isAlreadyFocused) {
-        (focusableElements[0] as HTMLElement).focus();
-        e.preventDefault();
-        return;
-      }
-
-      const best = findBestCandidate(currentFocused!, focusableElements, direction);
-      if (best) {
-        (best as HTMLElement).focus();
-        e.preventDefault();
-      }
+    const best = findBestCandidate(currentFocused!, focusableElements, direction);
+    if (best) {
+      (best as HTMLElement).focus();
+      e.preventDefault();
     }
   }, [enabled]);
 
