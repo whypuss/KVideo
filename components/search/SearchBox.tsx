@@ -91,7 +91,7 @@ export function SearchBox({ onSearch, onClear, initialQuery = '', placeholder = 
                         <Icons.X size={16} />
                     </button>
                 )}
-                <Button type="submit" variant="ghost" size="icon" className="absolute right-2 top-1/2 -translate-y-1/2" data-no-spatial>
+                <Button type="submit" variant="ghost" className="absolute right-2 top-1/2 -translate-y-1/2" data-no-spatial>
                     <Icons.Search size={20} />
                 </Button>
             </div>
