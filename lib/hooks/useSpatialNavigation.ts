@@ -28,16 +28,25 @@ function isNavigable(el: Element): boolean {
   const MIN_NAVIGABLE_SIZE = 30;
   const MIN_NAVIGABLE_AREA = 900;
 
-  if (rect.width < MIN_NAVIGABLE_SIZE || rect.height < MIN_NAVIGABLE_SIZE) {
-    return false;
-  }
-  if (rect.width * rect.height < MIN_NAVIGABLE_AREA) {
-    return false;
-  }
+  // Skip elements that are too small (icons, buttons in header/nav)
+  if (rect.width < MIN_NAVIGABLE_SIZE || rect.height < MIN_NAVIGABLE_SIZE) return false;
+  if (rect.width * rect.height < MIN_NAVIGABLE_AREA) return false;
+
+  // Skip elements with [data-no-spatial] attribute themselves
   if (el.hasAttribute('data-no-spatial')) return false;
+
+  // Skip elements inside [data-no-spatial] containers (check all ancestors)
   if (el.closest('[data-no-spatial]')) return false;
+
+  // Skip elements inside <header>, <nav>, <aside> tags (chrome/UI navigation)
+  if (el.closest('header, nav, aside')) return false;
+
+  // Skip hidden elements
   if (el.hasAttribute('hidden') || getComputedStyle(el).visibility === 'hidden') return false;
+
+  // Skip disabled elements
   if (el.hasAttribute('disabled')) return false;
+
   return true;
 }
 
