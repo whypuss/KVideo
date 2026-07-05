@@ -21,7 +21,7 @@ interface NavbarProps {
 export function Navbar({ onReset, onSearch, query = '', isPremiumMode = false }: NavbarProps) {
     const settingsHref = isPremiumMode ? '/premium/settings' : '/settings';
     const favoritesHref = isPremiumMode ? '/premium/favorites' : '/favorites';
-    const [session] = useState<AuthSession | null>(() => getSe ssion());
+    const [session] = useState<AuthSession | null>(() => getSession());
     const { iptvEnabled } = useRuntimeFeatures();
     const siteIconSrc = useSiteIcon();
     const [searchOpen, setSearchOpen] = useState(false);
