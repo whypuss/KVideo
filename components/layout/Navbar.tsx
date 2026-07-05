@@ -12,7 +12,6 @@ import { useRuntimeFeatures } from '@/components/RuntimeFeaturesProvider';
 import { useIsTV } from '@/lib/contexts/TVContext';
 import { useHistoryStore } from '@/lib/store/history-store';
 import { usePremiumHistoryStore } from '@/lib/store/history-store';
-import { FavoriteButton } from '@/components/favorites/FavoriteButton';
 
 interface NavbarProps {
     onReset: () => void;
@@ -26,9 +25,9 @@ export function Navbar({ onReset, isPremiumMode = false }: NavbarProps) {
     const { iptvEnabled } = useRuntimeFeatures();
     const siteIconSrc = useSiteIcon();
     const isTV = useIsTV();
-    const { normalHistory } = useHistoryStore();
+    const { viewingHistory } = useHistoryStore();
     const { viewingHistory: premiumHistory } = usePremiumHistoryStore();
-    const historyCount = isPremiumMode ? premiumHistory.length : normalHistory.viewingHistory.length;
+    const historyCount = isPremiumMode ? premiumHistory.length : viewingHistory.length;
 
     const handleLogout = () => {
         fetch('/api/auth/session', { method: 'DELETE' })
