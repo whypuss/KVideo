@@ -27,6 +27,7 @@ export default function HistoryPage() {
                         isPremium={isPremium}
                     />
                     <HistoryFooter
+                        hasHistory={viewingHistory.length > 0}
                         onClearAll={() => setDeleteConfirm({ isOpen: true })}
                     />
                 </div>
