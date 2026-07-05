@@ -1,0 +1,26 @@
+name: Build TV Docker
+
+on:
+  workflow_dispatch:
+    inputs:
+      docker_tag:
+        description: "Docker image tag"
+        required: true
+        default: "tv"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+      - run: npm install
+      - run: npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: next-build
+          path: .next/
+          retention-days: 1
