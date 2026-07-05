@@ -33,3 +33,9 @@
 body.tv-mode [data-tv-hide] {
     display: none !important;
 }
+
+
+/* Hide search bar and navigation icons in TV mode */
+body.tv-mode [data-tv-hide] {
+    display: none !important;
+}
