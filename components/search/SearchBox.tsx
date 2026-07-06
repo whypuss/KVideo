@@ -102,8 +102,7 @@ export function SearchBox({ onSearch, onClear, initialQuery = '', placeholder = 
                 onSelectItem={selectHistoryItem}
                 onRemoveItem={removeSearch}
                 onClearAll={clearAll}
-                onNavigate={navigateDropdown}
-                onMouseLeave={hideDropdown}
+                                
             />
         </form>
     );
