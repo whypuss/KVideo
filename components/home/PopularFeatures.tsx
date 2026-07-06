@@ -146,7 +146,7 @@ export function PopularFeatures({ onSearch, activeCategory = 'all' }: PopularFea
   const [heroTag, setHeroTag] = useState('热门');
   const [allGenreRows, setAllGenreRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  const [imageError, setImageError] = useState(false);
+  const [imageError, setImageError] = useState<Record<string, boolean>>({});
 
   // Update config when category changes
   useEffect(() => {
@@ -185,23 +185,25 @@ export function PopularFeatures({ onSearch, activeCategory = 'all' }: PopularFea
   }, [allGenreRows]);
 
   return (
-    <div className="animate-fade-in">
+    <div className="animate-fade-in px-4 sm:px-6 md:px-8 pb-8">
+      {/* 單張熱門電影推薦卡 — 縱向顯示，四周留白 */}
       {heroMovies.length > 0 && (
-        <div className="mb-6">
-          <Link href={`/?q=${encodeURIComponent(heroMovies[0].title)}`} className="block">
-            <div className="relative h-48 sm:h-64 md:h-72 lg:h-80 overflow-hidden rounded-lg">
+        <div className="flex justify-center py-6 sm:py-8 md:py-10 mb-6">
+          <Link href={`/?q=${encodeURIComponent(heroMovies[0].title)}`} className="block max-w-xs sm:max-w-sm md:max-w-md">
+            <div className="relative w-48 h-72 sm:w-56 sm:h-84 md:w-64 md:h-96 overflow-hidden rounded-xl shadow-2xl transform hover:scale-105 transition-transform duration-300 cursor-pointer">
               {!imageError ? (
                 <Image src={heroMovies[0].cover} alt={heroMovies[0].title} fill
                   className="object-cover object-center"
                   unoptimized referrerPolicy="no-referrer"
-                  onError={() => setImageError(true)} />
+                  onError={() => setImageError(prev => ({ ...prev, hero: true }))} />
               ) : (
-                <div className="absolute inset-0 bg-gradient-to-br from-purple-900 to-black" />
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-900 via-blue-900 to-black" />
               )}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
-              <div className="absolute inset-0 flex items-end p-4 sm:p-6">
-                <div>
-                  <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-white drop-shadow-lg">
+              {/* 渐变遮罩 — 底部标题 */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+              <div className="absolute inset-0 flex items-end justify-center pb-4">
+                <div className="px-3">
+                  <h2 className="text-sm sm:text-base md:text-lg font-bold text-white text-center drop-shadow-lg">
                     {heroMovies[0].title}
                   </h2>
                 </div>
@@ -211,7 +213,8 @@ export function PopularFeatures({ onSearch, activeCategory = 'all' }: PopularFea
         </div>
       )}
 
-      <div className="relative z-10">
+      {/* 60個分類行 */}
+      <div className="space-y-6">
         {visibleRows.map((row) => (
           <NetflixRow
             key={row.tag}
