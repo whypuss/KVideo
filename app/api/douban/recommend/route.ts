@@ -10,7 +10,32 @@ export async function GET(request: Request) {
   const type = searchParams.get('type') || 'movie'; // movie or tv
 
   try {
-    const url = `https://movie.douban.com/j/search_subjects?type=${type}&tag=${encodeURIComponent(tag)}&sort=recommend&page_limit=${pageLimit}&page_start=${pageStart}`;
+    // Douban TV API (type=tv) doesn't return any results for tags
+    // Use movie API with TV-related tags instead
+    let apiType = type;
+    let apiTag = tag;
+
+    // For TV type, use movie API with appropriate tags
+    if (type === 'tv') {
+      apiType = 'movie';
+      // Map TV tags to movie tags
+      const tvTagMap: Record<string, string> = {
+        '国产剧': '国产',
+        '港剧': '香港',
+        '韩剧': '韩国',
+        '美剧': '美国',
+        '日剧': '日本',
+        '英剧': '英国',
+        '泰剧': '泰国',
+        '台剧': '台湾',
+        '热门': '热门',
+        '最新': '最新',
+        '经典': '经典',
+      };
+      apiTag = tvTagMap[tag] || tag;
+    }
+
+    const url = `https://movie.douban.com/j/search_subjects?type=${apiType}&tag=${encodeURIComponent(apiTag)}&sort=recommend&page_limit=${pageLimit}&page_start=${pageStart}`;
 
     const response = await fetch(url, {
       headers: {
