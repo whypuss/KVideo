@@ -68,9 +68,57 @@ function getCategoryConfig(activeCategory: string) {
   const genreMap: Record<string, string> = {
     'action': '动作',
     'comedy': '热门',
-    'drama': '热门',
-    'sci-fi': '热门',
-    'thriller': '热门',
+    'drama': '剧情',
+    'sci-fi': '科幻',
+    'thriller': '惊悚',
+    'horror': '恐怖',
+    'war': '战争',
+    'crime': '犯罪',
+    'animation': '动画',
+    'fantasy': '奇幻',
+    'adventure': '冒险',
+    'biography': '传记',
+    'history': '历史',
+    'documentary': '纪录片',
+    'musical': '音乐',
+    'family': '家庭',
+    'children': '儿童',
+    'short': '短片',
+    'western': '西部',
+    'sport': '运动',
+    'mystery': '悬疑',
+    'chinese-anime': '动画',
+    'japanese-anime': '动画',
+    'imdb-top-250': '热门',
+    'classic': '经典',
+    'cult': '邪典',
+    'experimental': '实验',
+    'martial-arts': '动作',
+    'noir': '黑色',
+    'superhero': '动作',
+    'cyberpunk': '科幻',
+    'steampunk': '科幻',
+    'disaster': '动作',
+    'post-apocalyptic': '科幻',
+    'fairy-tale': '奇幻',
+    'satire': '喜剧',
+    'parody': '喜剧',
+    'dark-comedy': '喜剧',
+    'romantic-comedy': '爱情',
+    'action-comedy': '动作',
+    'comedy-action': '动作',
+    'mystery-comedy': '悬疑',
+    'horror-comedy': '恐怖',
+    'crime-thriller': '犯罪',
+    'thriller-mystery': '悬疑',
+    'historical': '历史',
+    'epic': '历史',
+    'political': '剧情',
+    'social': '剧情',
+    'religion': '剧情',
+    'environmental': '纪录片',
+    'neofilms': '热门',
+    'independent': '剧情',
   };
 
   const heroTag = genreMap[activeCategory] || '热门';
@@ -93,6 +141,7 @@ export function PopularFeatures({ onSearch, activeCategory = 'all' }: PopularFea
   const [heroTag, setHeroTag] = useState('热门');
   const [allGenreRows, setAllGenreRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [imageError, setImageError] = useState(false);
   const [imageError, setImageError] = useState(false);
 
   // Update config when category changes
