@@ -40,6 +40,9 @@ RUN echo "=== Build Environment ===" && \
   echo "=== NPM version ===" && \
   npm --version
 
+# Set subscription sources for build-time injection
+ENV SUBSCRIPTION_SOURCES="[]"
+
 # Build Next.js application
 RUN set -ex && \
   if [ -f yarn.lock ]; then \
