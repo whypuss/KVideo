@@ -86,8 +86,10 @@ export const NetflixRow = memo(function NetflixRow({
   return (
     <div className="mb-10 group/row netflix-row">
       <div className="flex items-center gap-2 mb-3 px-4">
-        <h2 className="text-lg font-semibold text-[var(--text-color)]">{title}</h2>
-        {hasMore && <Icons.ArrowRight size={16} className="text-[var(--text-muted)]" />}
+        <Link href={`/?q=${encodeURIComponent(title)}`} className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity" data-focusable>
+          <h2 className="text-lg font-semibold text-[var(--text-color)]">{title}</h2>
+          {hasMore && <Icons.ArrowRight size={16} className="text-[var(--text-muted)]" />}
+        </Link>
       </div>
 
       <div className="relative">
