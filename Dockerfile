@@ -19,6 +19,8 @@ RUN \
 
 # Rebuild the source code only when needed
 FROM base AS builder
+ARG SUBSCRIPTION_SOURCES="[]"
+ENV SUBSCRIPTION_SOURCES=${SUBSCRIPTION_SOURCES}
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
@@ -42,9 +44,6 @@ RUN echo "=== Build Environment ===" && \
 
 # Set subscription sources for build-time injection
 ENV SUBSCRIPTION_SOURCES="[]"
-
-ARG SUBSCRIPTION_SOURCES="[]"
-ENV SUBSCRIPTION_SOURCES=${SUBSCRIPTION_SOURCES}
 
 # Build Next.js application
 RUN set -ex && \
