@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { NetflixHero } from './NetflixHero';
+import Image from 'next/image';
 import { NetflixRow } from './NetflixRow';
 import { usePopularMovies } from './hooks/usePopularMovies';
 
@@ -13,18 +13,38 @@ interface PopularFeaturesProps {
 
 // All genre rows - always show all (Douban API limitation)
 const GENRE_ROWS = [
-  { tag: 'action', label: '动作大片' },
-  { tag: 'comedy', label: '喜剧' },
-  { tag: 'romance', label: '爱情' },
+  { tag: 'action', label: '動作' },
+  { tag: 'comedy', label: '喜劇' },
+  { tag: 'romance', label: '愛情' },
   { tag: 'sci-fi', label: '科幻' },
-  { tag: 'drama', label: '剧情' },
-  { tag: 'mystery', label: '悬疑犯罪' },
-  { tag: 'horror', label: '恐怖惊悚' },
-  { tag: 'war', label: '战争' },
+  { tag: 'drama', label: '劇情' },
+  { tag: 'mystery', label: '懸疑' },
+  { tag: 'thriller', label: '驚悚' },
+  { tag: 'horror', label: '恐怖' },
+  { tag: 'war', label: '戰爭' },
   { tag: 'crime', label: '犯罪' },
-  { tag: 'animation', label: '中國動畫' },
-  { tag: 'biography', label: '传记' },
-  { tag: 'fantasy', label: '奇幻冒险' },
+  { tag: 'animation', label: '動畫' },
+  { tag: 'biography', label: '傳記' },
+  { tag: 'fantasy', label: '奇幻' },
+  { tag: 'adventure', label: '冒險' },
+  { tag: 'musical', label: '音樂' },
+  { tag: 'history', label: '歷史' },
+  { tag: 'documentary', label: '紀錄片' },
+  { tag: 'western', label: '西部' },
+  { tag: 'sport', label: '運動' },
+  { tag: 'news', label: '新聞' },
+  { tag: 'family', label: '家庭' },
+  { tag: 'short', label: '短片' },
+  { tag: 'children', label: '兒童' },
+  { tag: 'imdb-top-250', label: '豆瓣熱映' },
+  { tag: 'classic', label: '經典' },
+  { tag: 'cult', label: '邪典' },
+  { tag: 'experimental', label: '實驗' },
+  { tag: 'martial-arts', label: '武俠' },
+  { tag: 'mystery', label: '推理' },
+  { tag: 'noir', label: '黑色' },
+  { tag: 'neofilms', label: '新片' },
+  { tag: 'independent', label: '獨立' },
 ];
 
 function getCategoryConfig(activeCategory: string) {
@@ -73,6 +93,7 @@ export function PopularFeatures({ onSearch, activeCategory = 'all' }: PopularFea
   const [heroTag, setHeroTag] = useState('热门');
   const [allGenreRows, setAllGenreRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
   // Update config when category changes
   useEffect(() => {
@@ -112,13 +133,32 @@ export function PopularFeatures({ onSearch, activeCategory = 'all' }: PopularFea
 
   return (
     <div className="animate-fade-in">
-      <NetflixHero
-        movies={heroMovies}
-        loading={heroLoading}
-        onMovieClick={(movie) => onSearch?.(movie.title)}
-      />
+      {heroMovies.length > 0 && (
+        <div className="mb-6">
+          <Link href={`/?q=${encodeURIComponent(heroMovies[0].title)}`} className="block">
+            <div className="relative h-48 sm:h-64 md:h-72 lg:h-80 overflow-hidden rounded-lg">
+              {!imageError ? (
+                <Image src={heroMovies[0].cover} alt={heroMovies[0].title} fill
+                  className="object-cover object-center"
+                  unoptimized referrerPolicy="no-referrer"
+                  onError={() => setImageError(true)} />
+              ) : (
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-900 to-black" />
+              )}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
+              <div className="absolute inset-0 flex items-end p-4 sm:p-6">
+                <div>
+                  <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-white drop-shadow-lg">
+                    {heroMovies[0].title}
+                  </h2>
+                </div>
+              </div>
+            </div>
+          </Link>
+        </div>
+      )}
 
-      <div className="relative z-10 mt-4">
+      <div className="relative z-10">
         {visibleRows.map((row) => (
           <NetflixRow
             key={row.tag}
