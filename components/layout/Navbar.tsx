@@ -24,6 +24,13 @@ const CATEGORIES = [
     { key: 'drama', label: '劇情' },
     { key: 'sci-fi', label: '科幻' },
     { key: 'thriller', label: '懸疑' },
+    { key: 'tv', label: '電視劇' },
+    { key: 'cn-drama', label: '中國電視劇' },
+    { key: 'cn-anime', label: '中國動畫' },
+    { key: 'kr-drama', label: '韓國電視劇' },
+    { key: 'jp-drama', label: '日本電視劇' },
+    { key: 'jp-anime', label: '日本動畫' },
+    { key: 'en-drama', label: '英語電視劇' },
 ];
 
 export function Navbar({ onReset, activeCategory = 'all', onCategoryChange, isPremiumMode = false }: NavbarProps) {
