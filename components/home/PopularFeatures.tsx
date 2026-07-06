@@ -142,7 +142,6 @@ export function PopularFeatures({ onSearch, activeCategory = 'all' }: PopularFea
   const [allGenreRows, setAllGenreRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [imageError, setImageError] = useState(false);
-  const [imageError, setImageError] = useState(false);
 
   // Update config when category changes
   useEffect(() => {
