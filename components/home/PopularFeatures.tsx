@@ -13,18 +13,18 @@ interface PopularFeaturesProps {
 
 // All genre rows - always show all (Douban API limitation)
 const GENRE_ROWS = [
-  { tag: '动作', label: '动作大片' },
-  { tag: '喜剧', label: '喜剧' },
-  { tag: '爱情', label: '爱情' },
-  { tag: '科幻', label: '科幻' },
-  { tag: '剧情', label: '剧情' },
-  { tag: '悬疑', label: '悬疑犯罪' },
-  { tag: '恐怖', label: '恐怖惊悚' },
-  { tag: '战争', label: '战争' },
-  { tag: '犯罪', label: '犯罪' },
-  { tag: '动画', label: '动画' },
-  { tag: '传记', label: '传记' },
-  { tag: '奇幻', label: '奇幻冒险' },
+  { tag: 'action', label: '动作大片' },
+  { tag: 'comedy', label: '喜剧' },
+  { tag: 'romance', label: '爱情' },
+  { tag: 'sci-fi', label: '科幻' },
+  { tag: 'drama', label: '剧情' },
+  { tag: 'mystery', label: '悬疑犯罪' },
+  { tag: 'horror', label: '恐怖惊悚' },
+  { tag: 'war', label: '战争' },
+  { tag: 'crime', label: '犯罪' },
+  { tag: 'animation', label: '动画' },
+  { tag: 'biography', label: '传记' },
+  { tag: 'fantasy', label: '奇幻冒险' },
 ];
 
 function getCategoryConfig(activeCategory: string) {
