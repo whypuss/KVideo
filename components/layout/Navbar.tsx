@@ -13,7 +13,7 @@
                             {/* 收藏 */}
                             <Link
                                 href={favoritesHref}
-                                className="w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-full hover:bg-[color-mix(in_srgb,var(--accent-color)_10%,transparent)] transition-all cursor-pointer"
+                                className="w-6 h-6 sm:w-10 sm:h-10 flex items-center justify-center rounded-full hover:bg-[color-mix(in_srgb,var(--accent-color)_10%,transparent)] transition-all cursor-pointer"
                                 aria-label="我的收藏"
                                 data-focusable
                             >
@@ -22,7 +22,7 @@
                             {/* 設定 */}
                             <Link
                                 href={settingsHref}
-                                className="w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-full hover:bg-[color-mix(in_srgb,var(--accent-color)_10%,transparent)] transition-all cursor-pointer"
+                                className="w-6 h-6 sm:w-10 sm:h-10 flex items-center justify-center rounded-full hover:bg-[color-mix(in_srgb,var(--accent-color)_10%,transparent)] transition-all cursor-pointer"
                                 aria-label="設定"
                                 data-focusable
                             >
