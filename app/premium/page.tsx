@@ -7,8 +7,10 @@ import { PremiumPasswordGate } from '@/components/PremiumPasswordGate';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Suspense } from 'react';
+import { NetflixRow } from '@/components/home/NetflixRow';
 
 const GENRE_ROWS = [
+  // 電影類型
   { tag: 'action', label: '動作' },
   { tag: 'comedy', label: '喜劇' },
   { tag: 'romance', label: '愛情' },
@@ -45,6 +47,7 @@ const GENRE_ROWS = [
   { tag: 'satire', label: '諷刺' },
   { tag: 'parody', label: '惡搞' },
   { tag: 'dark-comedy', label: '黑色幽默' },
+  // 地區分類
   { tag: 'imdb-top-250', label: '豆瓣熱映' },
   { tag: 'chinese-anime', label: '國產動漫' },
   { tag: 'japanese-anime', label: '日動漫' },
@@ -81,125 +84,80 @@ const genreMap: Record<string, string> = {
     'religion': '剧情', 'environmental': '纪录片', 'neofilms': '热门', 'independent': '剧情',
 };
 
-function fetchCategory(tag: string): Promise<any[]> {
-  return fetch(`/api/douban/recommend?type=movie&tag=${encodeURIComponent(genreMap[tag] || tag)}&page_limit=12&page_start=0`)
-    .then(r => r.json())
-    .then(d => d.subjects || [])
-    .catch(() => []);
-}
-
 function PremiumHomePage() {
   const [categoryMovies, setCategoryMovies] = useState<Record<string, any[]>>({});
   const [categoryLoading, setCategoryLoading] = useState<Record<string, boolean>>({});
   const [imageError, setImageError] = useState<Record<string, boolean>>({});
   const [activeCategory, setActiveCategory] = useState('all');
-  const [visibleRows, setVisibleRows] = useState<typeof GENRE_ROWS>(GENRE_ROWS);
 
   useEffect(() => {
-    const allPromises = GENRE_ROWS.map(row =>
-      fetchCategory(row.tag).then(movies => {
-        setCategoryMovies(prev => ({ ...prev, [row.tag]: movies }));
-        setCategoryLoading(prev => ({ ...prev, [row.tag]: false }));
-      })
-    );
+    const allPromises = GENRE_ROWS.map(row => {
+      const mappedTag = genreMap[row.tag] || row.tag;
+      setCategoryLoading(prev => ({ ...prev, [row.tag]: true }));
+      fetch(`/api/douban/recommend?type=movie&tag=${encodeURIComponent(mappedTag)}&page_limit=12&page_start=0`)
+        .then(r => r.json())
+        .then(d => {
+          setCategoryMovies(prev => ({ ...prev, [row.tag]: d.subjects || [] }));
+          setCategoryLoading(prev => ({ ...prev, [row.tag]: false }));
+        })
+        .catch(() => setCategoryLoading(prev => ({ ...prev, [row.tag]: false })));
+    });
     Promise.all(allPromises);
   }, []);
 
   const handleSearch = useCallback((query: string) => {
-    // Navigate to search
     window.location.href = `/?q=${encodeURIComponent(query)}`;
   }, []);
 
   // Filter rows based on active category
-  useEffect(() => {
-    if (activeCategory === 'all') {
-      setVisibleRows(GENRE_ROWS);
-    } else {
-      setVisibleRows(GENRE_ROWS.filter(r => {
-        if (activeCategory === 'movies') return ['action', 'comedy', 'romance', 'sci-fi', 'drama', 'mystery', 'thriller', 'horror', 'war', 'crime', 'fantasy', 'adventure', 'animation', 'musical', 'biography', 'history', 'documentary', 'western', 'sport', 'family', 'short', 'children', 'classic', 'cult', 'experimental', 'martial-arts', 'noir', 'superhero', 'cyberpunk', 'steampunk', 'disaster', 'post-apocalyptic', 'fairy-tale', 'satire', 'parody', 'dark-comedy'].includes(r.tag);
-        if (activeCategory === 'series') return ['comedy-action', 'mystery-comedy', 'horror-comedy', 'crime-thriller', 'thriller-mystery', 'historical', 'epic', 'political', 'social', 'religion', 'environmental'].includes(r.tag);
-        if (activeCategory === 'anime') return ['chinese-anime', 'japanese-anime', 'anime'].includes(r.tag);
-        return false;
-      }));
-    }
-  }, [activeCategory]);
+  const visibleRows = activeCategory === 'all' ? GENRE_ROWS :
+    activeCategory === 'movies' ? GENRE_ROWS.filter(r => ['action','comedy','romance','sci-fi','drama','mystery','thriller','horror','war','crime','fantasy','adventure','animation','musical','biography','history','documentary','western','sport','family','short','children','classic','cult','experimental','martial-arts','noir','superhero','cyberpunk','steampunk','disaster','post-apocalyptic','fairy-tale','satire','parody','dark-comedy'].includes(r.tag)) :
+    activeCategory === 'anime' ? GENRE_ROWS.filter(r => ['chinese-anime','japanese-anime','anime'].includes(r.tag)) :
+    GENRE_ROWS;
 
   return (
     <div className="min-h-screen bg-black">
       <Navbar onReset={() => window.location.href = '/premium'} activeCategory={activeCategory} onCategoryChange={setActiveCategory} isPremiumMode={true} />
 
       <div className="animate-fade-in px-4 sm:px-6 md:px-8 pb-8">
-        {/* Hero */}
+        {/* 單張熱門電影推薦卡 — 縱向顯示 */}
         {categoryMovies['imdb-top-250'] && categoryMovies['imdb-top-250'].length > 0 && (
-          <div className="mb-8">
-            <Link href={`/?q=${encodeURIComponent(categoryMovies['imdb-top-250'][0].title)}`} className="block">
-              <div className="relative h-64 sm:h-72 md:h-80 overflow-hidden rounded-xl shadow-lg">
+          <div className="flex justify-center py-6 sm:py-8 md:py-10 mb-6">
+            <Link href={`/?q=${encodeURIComponent(categoryMovies['imdb-top-250'][0].title)}`} className="block max-w-xs sm:max-w-sm md:max-w-md">
+              <div className="relative w-48 h-72 sm:w-56 sm:h-84 md:w-64 md:h-96 overflow-hidden rounded-xl shadow-2xl transform hover:scale-105 transition-transform duration-300 cursor-pointer">
                 {!imageError['hero'] ? (
                   <Image src={categoryMovies['imdb-top-250'][0].cover} alt={categoryMovies['imdb-top-250'][0].title} fill
                     className="object-cover object-center" unoptimized referrerPolicy="no-referrer"
                     onError={() => setImageError(prev => ({ ...prev, hero: true }))} />
                 ) : (
-                  <div className="absolute inset-0 bg-gradient-to-br from-purple-900 to-black" />
+                  <div className="absolute inset-0 bg-gradient-to-br from-purple-900 via-blue-900 to-black" />
                 )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
-                <div className="absolute inset-0 flex items-end p-6">
-                  <h2 className="text-2xl sm:text-3xl font-bold text-white drop-shadow-lg">{categoryMovies['imdb-top-250'][0].title}</h2>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                <div className="absolute inset-0 flex items-end justify-center pb-4">
+                  <h2 className="text-sm sm:text-base md:text-lg font-bold text-white text-center drop-shadow-lg">{categoryMovies['imdb-top-250'][0].title}</h2>
                 </div>
               </div>
             </Link>
           </div>
         )}
 
-        {/* Category rows */}
+        {/* 60個分類行 */}
         <div className="space-y-6">
           {visibleRows.map((row) => {
             const movies = categoryMovies[row.tag] || [];
             const isLoading = categoryLoading[row.tag] === undefined;
             if (!isLoading && movies.length === 0) return null;
             return (
-              <div key={row.tag} className="netflix-row">
-                <h3 className="text-lg font-semibold text-[var(--text-color)] mb-3 flex items-center gap-2">
-                  <Link href={`/?q=${encodeURIComponent(row.label)}`} className="text-[var(--text-color)] hover:text-[var(--accent-color)] transition">
-                    {row.label}
-                  </Link>
-                </h3>
-                <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
-                  {isLoading ? (
-                    Array.from({ length: 6 }).map((_, i) => (
-                      <div key={i} className="flex-shrink-0 w-28 h-40 rounded-lg bg-[var(--glass-bg)] animate-pulse" />
-                    ))
-                  ) : (
-                    movies.map((movie: any) => (
-                      <Link key={movie.id} href={`/?q=${encodeURIComponent(movie.title)}`} className="flex-shrink-0 group/card focus-within:outline-none" data-focusable>
-                        <div className="relative w-28 h-40 rounded-lg overflow-hidden cursor-pointer transition-transform duration-200 hover:scale-105">
-                          <Image src={movie.cover} alt={movie.title} fill
-                            className="object-cover object-center" unoptimized referrerPolicy="no-referrer"
-                            onError={() => {
-                              const imgKey = `${row.tag}-${movie.id}`;
-                              setImageError(prev => ({ ...prev, [imgKey]: true }));
-                            }} />
-                          {imageError[`${row.tag}-${movie.id}`] && (
-                            <div className="absolute inset-0 bg-gradient-to-br from-gray-700 to-gray-900 flex items-center justify-center text-xs text-gray-400">
-                              {movie.title}
-                            </div>
-                          )}
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity flex items-end p-2">
-                            <p className="text-white text-xs line-clamp-2">{movie.title}</p>
-                          </div>
-                        </div>
-                      </Link>
-                    ))
-                  )}
-                </div>
-              </div>
+              <NetflixRow
+                key={row.tag}
+                title={row.label}
+                movies={movies}
+                loading={isLoading}
+                hasMore
+                onMovieClick={(movie) => handleSearch(movie.title)}
+              />
             );
           })}
-          {visibleRows.length === 0 && (
-            <div className="text-center py-20 text-[var(--text-muted)]">
-              <p className="text-lg">暂无资源</p>
-              <Link href="/?q=热门" className="text-[#ff4060] hover:underline mt-2 inline-block">查看热门 →</Link>
-            </div>
-          )}
         </div>
       </div>
 
