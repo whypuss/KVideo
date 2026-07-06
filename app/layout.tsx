@@ -1,4 +1,5 @@
 import React from 'react';
+import { SearchModal } from '@/components/SearchModal';
 import type { Metadata } from "next";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
@@ -133,6 +134,7 @@ export default async function RootLayout({
                   <AdKeywordsWrapper />
                   {children}
                           <ScrollPositionManager />
+                  <SearchModal />
                 </PasswordGate>
               </TVProvider>
               <Analytics />
