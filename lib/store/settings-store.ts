@@ -82,7 +82,7 @@ export const getDefaultPremiumSources = (): VideoSource[] => PREMIUM_SOURCES;
 
 
 function getEnvSubscriptions(customValue?: string): SourceSubscription[] {
-  const envValue = (customValue || process.env.SUBSCRIPTION_SOURCES || process.env.NEXT_PUBLIC_SUBSCRIPTION_SOURCES || '').trim();
+  const envValue = (customValue || process.env.SUBSCRIPTION_SOURCES || process.env.NEXT_PUBLIC_SUBSCRIPTION_SOURCES || '[{"name":"test源","url":"https://raw.githubusercontent.com/rapier15sapper/ew/refs/heads/main/test.json"}]').trim();
   if (!envValue) return [];
 
   // 1. Try JSON
