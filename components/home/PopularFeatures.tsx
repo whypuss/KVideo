@@ -118,7 +118,7 @@ export function PopularFeatures({ onSearch, activeCategory = 'all' }: PopularFea
         onMovieClick={(movie) => onSearch?.(movie.title)}
       />
 
-      <div className="relative z-10 -mt-20">
+      <div className="relative z-10 mt-4">
         {visibleRows.map((row) => (
           <NetflixRow
             key={row.tag}
