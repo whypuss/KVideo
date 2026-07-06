@@ -43,6 +43,9 @@ RUN echo "=== Build Environment ===" && \
 # Set subscription sources for build-time injection
 ENV SUBSCRIPTION_SOURCES="[]"
 
+ARG SUBSCRIPTION_SOURCES="[]"
+ENV SUBSCRIPTION_SOURCES=${SUBSCRIPTION_SOURCES}
+
 # Build Next.js application
 RUN set -ex && \
   if [ -f yarn.lock ]; then \
