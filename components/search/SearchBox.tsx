@@ -99,6 +99,7 @@ export function SearchBox({ onSearch, onClear, initialQuery = '', placeholder = 
                 isOpen={isDropdownOpen}
                 searchHistory={searchHistory}
                 highlightedIndex={highlightedIndex}
+                triggerRef={inputRef}
                 onSelectItem={selectHistoryItem}
                 onRemoveItem={removeSearch}
                 onClearAll={clearAll}
