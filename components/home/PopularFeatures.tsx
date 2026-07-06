@@ -1,245 +1,169 @@
+/**
+ * PopularFeatures - Main component for popular movies section
+ * Displays Douban movie recommendations with tag filtering and infinite scroll.
+ * Includes personalized "为你推荐" tag when user has 2+ watched items.
+ */
+
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
-import Link from 'next/link';
-import Image from 'next/image';
-import { NetflixRow } from './NetflixRow';
+import { useState, useEffect } from 'react';
+import { TagManager } from './TagManager';
+import { MovieGrid } from './MovieGrid';
+import { useTagManager } from './hooks/useTagManager';
 import { usePopularMovies } from './hooks/usePopularMovies';
+import { usePersonalizedRecommendations } from './hooks/usePersonalizedRecommendations';
 
 interface PopularFeaturesProps {
   onSearch?: (query: string) => void;
-  activeCategory?: string;
 }
 
-// All genre rows - always show all (Douban API limitation)
-const GENRE_ROWS = [
-  { tag: 'action', label: '動作' },
-  { tag: 'comedy', label: '喜劇' },
-  { tag: 'romance', label: '愛情' },
-  { tag: 'sci-fi', label: '科幻' },
-  { tag: 'drama', label: '劇情' },
-  { tag: 'mystery', label: '懸疑' },
-  { tag: 'thriller', label: '驚悚' },
-  { tag: 'horror', label: '恐怖' },
-  { tag: 'war', label: '戰爭' },
-  { tag: 'crime', label: '犯罪' },
-  { tag: 'animation', label: '動畫' },
-  { tag: 'biography', label: '傳記' },
-  { tag: 'fantasy', label: '奇幻' },
-  { tag: 'adventure', label: '冒險' },
-  { tag: 'musical', label: '音樂' },
-  { tag: 'history', label: '歷史' },
-  { tag: 'documentary', label: '紀錄片' },
-  { tag: 'western', label: '西部' },
-  { tag: 'sport', label: '運動' },
-  { tag: 'news', label: '新聞' },
-  { tag: 'family', label: '家庭' },
-  { tag: 'short', label: '短片' },
-  { tag: 'children', label: '兒童' },
-  { tag: 'imdb-top-250', label: '豆瓣熱映' },
-  { tag: 'classic', label: '經典' },
-  { tag: 'cult', label: '邪典' },
-  { tag: 'experimental', label: '實驗' },
-  { tag: 'martial-arts', label: '武俠' },
-  { tag: 'mystery', label: '推理' },
-  { tag: 'noir', label: '黑色' },
-  { tag: 'neofilms', label: '新片' },
-  { tag: 'independent', label: '獨立' },
-];
+export function PopularFeatures({ onSearch }: PopularFeaturesProps) {
+  const {
+    tags,
+    selectedTag,
+    contentType,
+    newTagInput,
+    showTagManager,
+    justAddedTag,
+    setContentType,
+    setSelectedTag,
+    setNewTagInput,
+    setShowTagManager,
+    setJustAddedTag,
+    handleAddTag,
+    handleDeleteTag,
+    handleRestoreDefaults,
+    handleDragEnd,
+    isLoadingTags,
+  } = useTagManager();
 
-function getCategoryConfig(activeCategory: string) {
-  // TV drama categories
-  if (['tv', 'cn-drama', 'kr-drama', 'jp-drama', 'en-drama'].includes(activeCategory)) {
-    return {
-      contentType: 'tv' as const,
-      heroTag: '热门',
-    };
-  }
+  const {
+    movies: recommendMovies,
+    loading: recommendLoading,
+    hasMore: recommendHasMore,
+    hasHistory,
+    prefetchRef: recommendPrefetchRef,
+    loadMoreRef: recommendLoadMoreRef,
+  } = usePersonalizedRecommendations(false);
 
-  // Anime category
-  if (['anime', 'cn-anime', 'jp-anime'].includes(activeCategory)) {
-    return {
-      contentType: 'movie' as const,
-      heroTag: '动画',
-    };
-  }
+  // Track whether the recommendation tab is active
+  const [isRecommendSelected, setIsRecommendSelected] = useState(hasHistory);
 
-  // Movie genre categories - map to Douban-supported tags
-  const genreMap: Record<string, string> = {
-    'action': '动作',
-    'comedy': '热门',
-    'drama': '剧情',
-    'sci-fi': '科幻',
-    'thriller': '惊悚',
-    'horror': '恐怖',
-    'war': '战争',
-    'crime': '犯罪',
-    'animation': '动画',
-    'fantasy': '奇幻',
-    'adventure': '冒险',
-    'biography': '传记',
-    'history': '历史',
-    'documentary': '纪录片',
-    'musical': '音乐',
-    'family': '家庭',
-    'children': '儿童',
-    'short': '短片',
-    'western': '西部',
-    'sport': '运动',
-    'mystery': '悬疑',
-    'chinese-anime': '动画',
-    'japanese-anime': '动画',
-    'imdb-top-250': '热门',
-    'classic': '经典',
-    'cult': '邪典',
-    'experimental': '实验',
-    'martial-arts': '动作',
-    'noir': '黑色',
-    'superhero': '动作',
-    'cyberpunk': '科幻',
-    'steampunk': '科幻',
-    'disaster': '动作',
-    'post-apocalyptic': '科幻',
-    'fairy-tale': '奇幻',
-    'satire': '喜剧',
-    'parody': '喜剧',
-    'dark-comedy': '喜剧',
-    'romantic-comedy': '爱情',
-    'action-comedy': '动作',
-    'comedy-action': '动作',
-    'mystery-comedy': '悬疑',
-    'horror-comedy': '恐怖',
-    'crime-thriller': '犯罪',
-    'thriller-mystery': '悬疑',
-    'historical': '历史',
-    'epic': '历史',
-    'political': '剧情',
-    'social': '剧情',
-    'religion': '剧情',
-    'environmental': '纪录片',
-    'neofilms': '热门',
-    'independent': '剧情',
-    'halloween': '惊悚',
-    'christmas': '热门',
-    'spring-festival': '热门',
-    'summer-movie': '热门',
-    'romantic': '爱情',
-};
+  // Sync selection when hasHistory changes after Zustand hydration from localStorage.
+  // On first render the store is empty (hasHistory=false), so useState captures false.
+  // Once hydration completes and hasHistory becomes true, auto-select the recommendation tab.
+  useEffect(() => {
+    if (hasHistory) {
+      setIsRecommendSelected(true);
+    }
+  }, [hasHistory]);
 
-  const heroTag = genreMap[activeCategory] || '热门';
-  return {
-    contentType: 'movie' as const,
-    heroTag,
+  const effectiveRecommendSelected = hasHistory && isRecommendSelected;
+
+  const {
+    movies,
+    loading,
+    hasMore,
+    prefetchRef,
+    loadMoreRef,
+  } = usePopularMovies(
+    effectiveRecommendSelected ? '' : selectedTag,
+    tags,
+    contentType
+  );
+
+  const handleMovieClick = (movie: any) => {
+    if (onSearch) {
+      onSearch(movie.title);
+    }
   };
-}
 
-interface DoubanMovie {
-  id: string;
-  title: string;
-  cover: string;
-  rate: string;
-  url: string;
-}
+  const handleRecommendSelect = () => {
+    setIsRecommendSelected(true);
+  };
 
-export function PopularFeatures({ onSearch, activeCategory = 'all' }: PopularFeaturesProps) {
-  const [contentType, setContentType] = useState<'movie' | 'tv'>('movie');
-  const [heroTag, setHeroTag] = useState('热门');
-  const [allGenreRows, setAllGenreRows] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [imageError, setImageError] = useState<Record<string, boolean>>({});
-
-  // Update config when category changes
-  useEffect(() => {
-    const config = getCategoryConfig(activeCategory);
-    setContentType(config.contentType);
-    setHeroTag(config.heroTag);
-  }, [activeCategory]);
-
-  // Load hero movies
-  const heroTags = [{ id: heroTag, label: heroTag, value: heroTag }];
-  const { movies: heroMovies, loading: heroLoading } = usePopularMovies(heroTag, heroTags, contentType);
-
-  // Load all genre rows
-  useEffect(() => {
-    if (!heroTag) return;
-    setLoading(true);
-    const loadAll = async () => {
-      const rows = await Promise.all(GENRE_ROWS.map(async (genre) => {
-        try {
-          const res = await fetch(`/api/douban/recommend?type=${contentType}&tag=${encodeURIComponent(genre.tag)}&page_limit=20&page_start=0`);
-          const data = await res.json();
-          return { ...genre, movies: data.subjects || [], loading: false };
-        } catch {
-          return { ...genre, movies: [], loading: false };
-        }
-      }));
-      setAllGenreRows(rows);
-      setLoading(false);
-    };
-    loadAll();
-  }, [contentType, heroTag]);
-
-  // Show all rows that have content
-  const visibleRows = useMemo(() => {
-    return allGenreRows.filter(row => row.movies && row.movies.length > 0);
-  }, [allGenreRows]);
+  const handleRegularTagSelect = (tagId: string) => {
+    if (tagId === 'custom_高级' || tags.find(t => t.id === tagId)?.label === '高级') {
+      window.location.href = '/premium';
+      return;
+    }
+    setIsRecommendSelected(false);
+    setSelectedTag(tagId);
+  };
 
   return (
-    <div className="animate-fade-in px-4 sm:px-6 md:px-8 pb-8">
-      {/* 單張熱門電影推薦卡 — 縱向顯示，四周留白 */}
-      {heroMovies.length > 0 && (
-        <div className="flex justify-center py-6 sm:py-8 md:py-10 mb-6">
-          <Link href={`/?q=${encodeURIComponent(heroMovies[0].title)}`} className="block max-w-xs sm:max-w-sm md:max-w-md">
-            <div className="relative w-48 h-72 sm:w-56 sm:h-84 md:w-64 md:h-96 overflow-hidden rounded-xl shadow-2xl transform hover:scale-105 transition-transform duration-300 cursor-pointer">
-              {!imageError ? (
-                <Image src={heroMovies[0].cover} alt={heroMovies[0].title} fill
-                  className="object-cover object-center"
-                  unoptimized referrerPolicy="no-referrer"
-                  onError={() => setImageError(prev => ({ ...prev, hero: true }))} />
-              ) : (
-                <div className="absolute inset-0 bg-gradient-to-br from-purple-900 via-blue-900 to-black" />
-              )}
-              {/* 渐变遮罩 — 底部标题 */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-              <div className="absolute inset-0 flex items-end justify-center pb-4">
-                <div className="px-3">
-                  <h2 className="text-sm sm:text-base md:text-lg font-bold text-white text-center drop-shadow-lg">
-                    {heroMovies[0].title}
-                  </h2>
-                </div>
-              </div>
-            </div>
-          </Link>
+    <div className="animate-fade-in">
+      {/* Content Type Toggle (Capsule Liquid Glass - Fixed & Centered) */}
+      {!effectiveRecommendSelected && (
+        <div className="mb-10 flex justify-center">
+          <div className="relative w-80 p-1 bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-full grid grid-cols-2 backdrop-blur-2xl shadow-lg ring-1 ring-white/10 overflow-hidden">
+            {/* Sliding Indicator */}
+            <div
+              className="absolute top-1 bottom-1 w-[calc(50%-4px)] bg-[var(--accent-color)] rounded-full transition-transform duration-400 cubic-bezier(0.4, 0, 0.2, 1) shadow-[0_0_15px_rgba(0,122,255,0.4)]"
+              style={{
+                transform: `translateX(${contentType === 'movie' ? '4px' : 'calc(100% + 4px)'})`,
+              }}
+            />
+
+            <button
+              onClick={() => setContentType('movie')}
+              className={`relative z-10 py-2.5 text-sm font-bold transition-colors duration-300 cursor-pointer flex justify-center items-center ${contentType === 'movie' ? 'text-white' : 'text-[var(--text-color-secondary)] hover:text-[var(--text-color)]'
+                }`}
+            >
+              电影
+            </button>
+            <button
+              onClick={() => setContentType('tv')}
+              className={`relative z-10 py-2.5 text-sm font-bold transition-colors duration-300 cursor-pointer flex justify-center items-center ${contentType === 'tv' ? 'text-white' : 'text-[var(--text-color-secondary)] hover:text-[var(--text-color)]'
+                }`}
+            >
+              电视剧
+            </button>
+          </div>
         </div>
       )}
 
-      {/* 60個分類行 */}
-      <div className="space-y-6">
-        {visibleRows.map((row) => (
-          <NetflixRow
-            key={row.tag}
-            title={row.label}
-            movies={row.movies}
-            loading={row.loading}
-            hasMore
-            onMovieClick={(movie) => onSearch?.(movie.title)}
-          />
-        ))}
-        {visibleRows.length === 0 && !loading && !heroLoading && (
-          <div className="text-center py-20 text-[var(--text-muted)]">
-            <p className="text-lg">暂无资源</p>
-            <Link href="/?q=热门" className="text-[#ff4060] hover:underline mt-2 inline-block">
-              查看热门 →
-            </Link>
-          </div>
-        )}
-        {loading && visibleRows.length === 0 && (
-          <div className="text-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-4 border-[var(--accent-color)] border-t-transparent mx-auto" />
-          </div>
-        )}
-      </div>
+      <TagManager
+        tags={tags}
+        selectedTag={effectiveRecommendSelected ? '' : selectedTag}
+        showTagManager={showTagManager}
+        newTagInput={newTagInput}
+        justAddedTag={justAddedTag}
+        onTagSelect={handleRegularTagSelect}
+        onTagDelete={handleDeleteTag}
+        onToggleManager={() => setShowTagManager(!showTagManager)}
+        onRestoreDefaults={handleRestoreDefaults}
+        onNewTagInputChange={setNewTagInput}
+        onAddTag={handleAddTag}
+        onDragEnd={handleDragEnd}
+        onJustAddedTagHandled={() => setJustAddedTag(false)}
+        isLoadingTags={isLoadingTags}
+        recommendTag={hasHistory ? {
+          label: '为你推荐',
+          isSelected: effectiveRecommendSelected,
+          onSelect: handleRecommendSelect,
+        } : undefined}
+      />
+
+      {effectiveRecommendSelected ? (
+        <MovieGrid
+          movies={recommendMovies}
+          loading={recommendLoading}
+          hasMore={recommendHasMore}
+          onMovieClick={handleMovieClick}
+          prefetchRef={recommendPrefetchRef}
+          loadMoreRef={recommendLoadMoreRef}
+        />
+      ) : (
+        <MovieGrid
+          movies={movies}
+          loading={loading}
+          hasMore={hasMore}
+          onMovieClick={handleMovieClick}
+          prefetchRef={prefetchRef}
+          loadMoreRef={loadMoreRef}
+        />
+      )}
     </div>
   );
 }
-
