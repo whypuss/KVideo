@@ -12,7 +12,26 @@ import { usePersonalizedRecommendations } from './hooks/usePersonalizedRecommend
 
 interface PopularFeaturesProps {
   onSearch?: (query: string) => void;
+  activeCategory?: string;
 }
+
+// Map category keys to Douban tags
+const CATEGORY_MAP: Record<string, string[]> = {
+  all: ['动作', '喜剧', '爱情', '科幻', '剧情', '悬疑', '恐怖', '战争', '犯罪', '动画', '纪录片', '传记'],
+  action: ['动作'],
+  anime: ['动画', '动画'],
+  comedy: ['喜剧'],
+  drama: ['剧情'],
+  'sci-fi': ['科幻'],
+  thriller: ['悬疑', '犯罪', '恐怖'],
+  tv: ['动作', '喜剧', '爱情', '科幻', '剧情', '悬疑', '恐怖', '战争', '犯罪', '动画', '纪录片', '传记'],
+  'cn-drama': ['动作', '喜剧', '爱情', '科幻', '剧情', '悬疑', '战争'],
+  'cn-anime': ['动画'],
+  'kr-drama': ['动作', '喜剧', '爱情', '科幻', '剧情', '悬疑'],
+  'jp-drama': ['动作', '喜剧', '爱情', '科幻', '剧情', '悬疑'],
+  'jp-anime': ['动画'],
+  'en-drama': ['动作', '喜剧', '爱情', '科幻', '剧情', '悬疑'],
+};
 
 const GENRE_ROWS = [
   { tag: '动作', label: '动作大片' },
@@ -31,11 +50,20 @@ interface DoubanMovie {
   url: string;
 }
 
-export function PopularFeatures({ onSearch }: PopularFeaturesProps) {
-  const [contentType] = useState<'movie' | 'tv'>(() => {
+export function PopularFeatures({ onSearch, activeCategory = 'all' }: PopularFeaturesProps) {
+  const [contentType, setContentType] = useState<'movie' | 'tv'>(() => {
     if (typeof window === 'undefined') return 'movie';
     return (localStorage.getItem('kvideo_default_content_type') || 'movie') as 'movie' | 'tv';
   });
+
+  // Update content type when category changes
+  useEffect(() => {
+    if (activeCategory === 'tv' || activeCategory === 'cn-drama' || activeCategory === 'kr-drama' || activeCategory === 'jp-drama' || activeCategory === 'en-drama') {
+      setContentType('tv');
+    } else {
+      setContentType('movie');
+    }
+  }, [activeCategory]);
 
   const heroTags = [{ id: 'popular', label: '热门', value: '热门' }];
   const { movies: heroMovies, loading: heroLoading } = usePopularMovies('popular', heroTags, contentType);
@@ -46,7 +74,8 @@ export function PopularFeatures({ onSearch }: PopularFeaturesProps) {
 
   useEffect(() => {
     const loadAll = async () => {
-      const rows = await Promise.all(GENRE_ROWS.map(async (genre) => {
+      const filteredGenres = GENRE_ROWS.filter(g => CATEGORY_MAP[activeCategory]?.includes(g.tag));
+      const rows = await Promise.all(filteredGenres.map(async (genre) => {
         try {
           const res = await fetch(`/api/douban/recommend?type=${contentType}&tag=${encodeURIComponent(genre.tag)}&page_limit=20&page_start=0`);
           const data = await res.json();
@@ -58,7 +87,7 @@ export function PopularFeatures({ onSearch }: PopularFeaturesProps) {
       setAllGenreRows(rows);
     };
     loadAll();
-  }, [contentType]);
+  }, [contentType, activeCategory]);
 
   return (
     <div className="animate-fade-in">
