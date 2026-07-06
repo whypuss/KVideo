@@ -11,7 +11,7 @@ interface PopularFeaturesProps {
   activeCategory?: string;
 }
 
-// All available genre rows
+// All genre rows - always show all (Douban API limitation)
 const GENRE_ROWS = [
   { tag: '动作', label: '动作大片' },
   { tag: '喜剧', label: '喜剧' },
@@ -27,14 +27,12 @@ const GENRE_ROWS = [
   { tag: '奇幻', label: '奇幻冒险' },
 ];
 
-// Category config: map category key to {contentType, heroTag, genreRowFilter}
 function getCategoryConfig(activeCategory: string) {
   // TV drama categories
   if (['tv', 'cn-drama', 'kr-drama', 'jp-drama', 'en-drama'].includes(activeCategory)) {
     return {
       contentType: 'tv' as const,
       heroTag: '热门',
-      showAllRows: true,
     };
   }
 
@@ -43,35 +41,22 @@ function getCategoryConfig(activeCategory: string) {
     return {
       contentType: 'movie' as const,
       heroTag: '动画',
-      showAllRows: false,
-      genreRowTags: ['动画', '奇幻'],
     };
   }
 
-  // Movie genre categories
-  const genreMap: Record<string, { heroTag: string; genreRowTags: string[] }> = {
-    'action': { heroTag: '动作', genreRowTags: ['动作', '科幻', '奇幻', '战争', '犯罪'] },
-    'comedy': { heroTag: '喜剧', genreRowTags: ['喜剧', '爱情', '剧情'] },
-    'drama': { heroTag: '剧情', genreRowTags: ['剧情', '爱情', '传记'] },
-    'sci-fi': { heroTag: '科幻', genreRowTags: ['科幻', '动作', '奇幻'] },
-    'thriller': { heroTag: '悬疑', genreRowTags: ['悬疑', '犯罪', '恐怖'] },
+  // Movie genre categories - map to Douban-supported tags
+  const genreMap: Record<string, string> = {
+    'action': '动作',
+    'comedy': '热门',
+    'drama': '热门',
+    'sci-fi': '热门',
+    'thriller': '热门',
   };
 
-  const config = genreMap[activeCategory];
-  if (config) {
-    return {
-      contentType: 'movie' as const,
-      heroTag: config.heroTag,
-      showAllRows: false,
-      genreRowTags: config.genreRowTags,
-    };
-  }
-
-  // Default: all
+  const heroTag = genreMap[activeCategory] || '热门';
   return {
     contentType: 'movie' as const,
-    heroTag: '热门',
-    showAllRows: true,
+    heroTag,
   };
 }
 
@@ -86,31 +71,24 @@ interface DoubanMovie {
 export function PopularFeatures({ onSearch, activeCategory = 'all' }: PopularFeaturesProps) {
   const [contentType, setContentType] = useState<'movie' | 'tv'>('movie');
   const [heroTag, setHeroTag] = useState('热门');
-  const [filteredRows, setFilteredRows] = useState<typeof GENRE_ROWS>([]);
   const [allGenreRows, setAllGenreRows] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
 
   // Update config when category changes
   useEffect(() => {
     const config = getCategoryConfig(activeCategory);
     setContentType(config.contentType);
     setHeroTag(config.heroTag);
-    
-    // Filter genre rows based on category
-    if (config.showAllRows) {
-      setFilteredRows(GENRE_ROWS);
-    } else if (config.genreRowTags) {
-      setFilteredRows(GENRE_ROWS.filter(r => config.genreRowTags!.includes(r.tag)));
-    } else {
-      setFilteredRows(GENRE_ROWS);
-    }
   }, [activeCategory]);
 
   // Load hero movies
   const heroTags = [{ id: heroTag, label: heroTag, value: heroTag }];
   const { movies: heroMovies, loading: heroLoading } = usePopularMovies(heroTag, heroTags, contentType);
 
-  // Load all genre rows data
+  // Load all genre rows
   useEffect(() => {
+    if (!heroTag) return;
+    setLoading(true);
     const loadAll = async () => {
       const rows = await Promise.all(GENRE_ROWS.map(async (genre) => {
         try {
@@ -122,17 +100,15 @@ export function PopularFeatures({ onSearch, activeCategory = 'all' }: PopularFea
         }
       }));
       setAllGenreRows(rows);
+      setLoading(false);
     };
     loadAll();
-  }, [contentType]);
+  }, [contentType, heroTag]);
 
-  // Filter visible rows based on active category
+  // Show all rows that have content
   const visibleRows = useMemo(() => {
-    if (filteredRows.length === 0) return [];
-    return allGenreRows
-      .filter(row => filteredRows.some(fr => fr.tag === row.tag))
-      .filter(row => row.movies && row.movies.length > 0);
-  }, [allGenreRows, filteredRows]);
+    return allGenreRows.filter(row => row.movies && row.movies.length > 0);
+  }, [allGenreRows]);
 
   return (
     <div className="animate-fade-in">
@@ -153,12 +129,17 @@ export function PopularFeatures({ onSearch, activeCategory = 'all' }: PopularFea
             onMovieClick={(movie) => onSearch?.(movie.title)}
           />
         ))}
-        {visibleRows.length === 0 && !heroLoading && (
+        {visibleRows.length === 0 && !loading && !heroLoading && (
           <div className="text-center py-20 text-[var(--text-muted)]">
-            <p className="text-lg">暂无{activeCategory !== 'all' ? activeCategory : ''}類資源</p>
+            <p className="text-lg">暂无资源</p>
             <Link href="/?q=热门" className="text-[#ff4060] hover:underline mt-2 inline-block">
-              查看熱門影片 →
+              查看热门 →
             </Link>
+          </div>
+        )}
+        {loading && visibleRows.length === 0 && (
+          <div className="text-center py-20">
+            <div className="animate-spin rounded-full h-12 w-12 border-4 border-[var(--accent-color)] border-t-transparent mx-auto" />
           </div>
         )}
       </div>
