@@ -6,6 +6,7 @@ import { SearchModal } from '@/components/SearchModal';
 import { SiteIconProvider } from '@/components/SiteIconProvider';
 import { RuntimeFeaturesProvider } from '@/components/RuntimeFeaturesProvider';
 import { TVProvider } from '@/lib/contexts/TVContext';
+import { ThemeProvider } from '@/components/ThemeProvider';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -18,16 +19,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     return (
         <html lang="zh">
             <body className={`${inter.className} min-h-screen`}>
-                <SiteIconProvider>
-                    <RuntimeFeaturesProvider>
-                        <TVProvider>
-                            {children}
-        <SearchModal />
-                            
-                            <BackToTop />
-                        </TVProvider>
-                    </RuntimeFeaturesProvider>
-                </SiteIconProvider>
+                <ThemeProvider>
+                    <SiteIconProvider>
+                        <RuntimeFeaturesProvider>
+                            <TVProvider>
+                                {children}
+                                <SearchModal />
+                                <BackToTop />
+                            </TVProvider>
+                        </RuntimeFeaturesProvider>
+                    </SiteIconProvider>
+                </ThemeProvider>
             </body>
         </html>
     );
