@@ -119,7 +119,12 @@ function getCategoryConfig(activeCategory: string) {
     'environmental': '纪录片',
     'neofilms': '热门',
     'independent': '剧情',
-  };
+    'halloween': '惊悚',
+    'christmas': '热门',
+    'spring-festival': '热门',
+    'summer-movie': '热门',
+    'romantic': '爱情',
+};
 
   const heroTag = genreMap[activeCategory] || '热门';
   return {
