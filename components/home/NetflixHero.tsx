@@ -71,9 +71,8 @@ export const NetflixHero = memo(function NetflixHero({
             {current.title}
           </h1>
           {current.rate && parseFloat(current.rate) > 0 && (
-            <div className="flex items-center gap-3 mb-4">
+            <div className="flex items-center gap-2 mb-4">
               <span className="text-yellow-400 font-semibold">★ {current.rate}</span>
-              <span className="text-white/70 text-sm">豆瓣評分</span>
             </div>
           )}
           <div className="flex items-center gap-3">
