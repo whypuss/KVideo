@@ -22,7 +22,7 @@ const GENRE_ROWS = [
   { tag: 'horror', label: '恐怖惊悚' },
   { tag: 'war', label: '战争' },
   { tag: 'crime', label: '犯罪' },
-  { tag: 'animation', label: '动画' },
+  { tag: 'animation', label: '中國動畫' },
   { tag: 'biography', label: '传记' },
   { tag: 'fantasy', label: '奇幻冒险' },
 ];
