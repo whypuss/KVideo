@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useMemo } from 'react';
+import { Suspense, useState, useMemo } from 'react';
 import { NoResults } from '@/components/search/NoResults';
 import { Navbar } from '@/components/layout/Navbar';
 import { SearchResults } from '@/components/home/SearchResults';
@@ -22,6 +22,8 @@ function HomePage() {
     handleReset,
     handleCancelSearch,
   } = useHomePage();
+  
+  const [activeCategory, setActiveCategory] = useState('all');
 
   const sourceUrls = useMemo(() =>
     availableSources.map(s => ({ id: s.id, baseUrl: s.id })),
@@ -36,7 +38,7 @@ function HomePage() {
   return (
     <div className="min-h-screen">
       <SearchModal />
-      <Navbar onReset={handleReset} />
+      <Navbar onReset={handleReset} activeCategory={activeCategory} onCategoryChange={setActiveCategory} />
 
       <main className="pb-20">
         {(results.length >= 1 || (!loading && results.length > 0)) && (
@@ -57,7 +59,7 @@ function HomePage() {
         )}
 
         {!loading && !hasSearched && (
-          <PopularFeatures onSearch={handleSearch} />
+          <PopularFeatures onSearch={handleSearch} activeCategory={activeCategory} />
         )}
       </main>
     </div>
