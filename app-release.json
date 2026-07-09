@@ -4,8 +4,18 @@
     "name": "KVideo",
     "branch": "main"
   },
-  "currentVersion": "4.9.10",
+  "currentVersion": "4.9.11",
   "releases": [
+    {
+      "version": "4.9.11",
+      "publishedAt": "2026-07-09",
+      "title": "修复登录成功后回到登录页",
+      "notes": [
+        "访问密码 gate 登录成功后会直接放行当前页面，不再依赖整页刷新进入主界面，避免会话镜像时序导致重复登录。",
+        "服务端 session cookie 的 Secure 属性现在按实际请求协议和 x-forwarded-proto 判断，修复 Docker / HTTP 自托管生产模式下浏览器拒收 cookie 后刷新又回登录页的问题。",
+        "新增登录 gate 状态决策和 session cookie 协议判断回归测试。"
+      ]
+    },
     {
       "version": "4.9.10",
       "publishedAt": "2026-07-09",
